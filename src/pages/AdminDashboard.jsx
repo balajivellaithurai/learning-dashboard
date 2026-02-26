@@ -1,0 +1,71 @@
+import { auth } from "../firebase";
+
+function AdminDashboard() {
+    const handleLogout = () => {
+        auth.signOut();
+    };
+
+    return (
+        <div className="dashboard-container">
+            <header className="nav-header fade-in">
+                <div>
+                    <h1 className="title">Platform <span className="text-gradient">Admin</span></h1>
+                    <p className="subtitle" style={{ marginBottom: 0 }}>System overview and access control.</p>
+                </div>
+                <button onClick={handleLogout} className="btn btn-logout">Logout</button>
+            </header>
+
+            <div className="grid-layout">
+                {/* Quick Actions Panel */}
+                <section className="brutal-card fade-in delay-1" style={{ background: "var(--accent-pink)" }}>
+                    <h2 className="section-title">
+                        <span style={{ fontSize: "1.2rem" }}>⚡</span> Quick Actions
+                    </h2>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                        <button className="btn btn-primary">
+                            ➕ Add Instructor
+                        </button>
+                        <button className="btn btn-secondary">
+                            👥 View Users Directory
+                        </button>
+                        <button className="btn btn-secondary">
+                            📈 Platform Analytics
+                        </button>
+                    </div>
+                </section>
+
+                {/* System Status Panel */}
+                <section className="brutal-card fade-in delay-2" style={{ background: "#fff" }}>
+                    <h2 className="section-title">
+                        <span style={{ fontSize: "1.2rem" }}>🟢</span> System Status
+                    </h2>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "1rem", borderBottom: "3px solid var(--border-color)" }}>
+                            <div>
+                                <p style={{ fontWeight: 700, color: "var(--text-primary)", margin: 0, fontSize: "1.1rem" }}>Database Connection</p>
+                                <p style={{ fontSize: "0.9rem", color: "var(--text-primary)", margin: 0, fontWeight: 500 }}>Firebase Firestore</p>
+                            </div>
+                            <span className="badge" style={{ background: "var(--accent-green)" }}>Healthy</span>
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "1rem", borderBottom: "3px solid var(--border-color)" }}>
+                            <div>
+                                <p style={{ fontWeight: 700, color: "var(--text-primary)", margin: 0, fontSize: "1.1rem" }}>Authentication</p>
+                                <p style={{ fontSize: "0.9rem", color: "var(--text-primary)", margin: 0, fontWeight: 500 }}>Firebase Auth (Google)</p>
+                            </div>
+                            <span className="badge" style={{ background: "var(--accent-green)" }}>Online</span>
+                        </div>
+
+                        <div className="empty-state" style={{ padding: "1.5rem", marginTop: "1rem", border: "4px solid var(--border-color)", background: "var(--accent-yellow)", boxShadow: "4px 4px 0px var(--border-color)" }}>
+                            <p style={{ margin: 0, fontSize: "1rem", fontWeight: "700" }}>More administrative features (role management, course approvals) are coming in v2.0.</p>
+                        </div>
+
+                    </div>
+                </section>
+            </div>
+        </div>
+    );
+}
+
+export default AdminDashboard;
