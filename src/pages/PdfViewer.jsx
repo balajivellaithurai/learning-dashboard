@@ -11,31 +11,33 @@ import {
   getDocs
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
+import ThemeToggle from "../components/ThemeToggle";
 
 function PdfViewer() {
-  const { pdfId } = useParams();
+  const { pdfId } = useParams(); // this is materialId now
   const navigate = useNavigate();
 
-  const [pdf, setPdf] = useState(null);
+  const [material, setMaterial] = useState(null);
   const [completed, setCompleted] = useState(false);
 
   const timerRef = useRef(null);
 
   useEffect(() => {
-    const loadPdf = async () => {
-      const snap = await getDoc(doc(db, "course_pdfs", pdfId));
+    const loadMaterial = async () => {
+      const snap = await getDoc(doc(db, "materials", pdfId));
+
       if (!snap.exists()) return;
 
       const data = snap.data();
-      setPdf(data);
+      setMaterial(data);
 
       if (!auth.currentUser) return;
 
-      // ✅ Check if already completed
+      // check progress by chapterId
       const q = query(
         collection(db, "user_progress"),
         where("userId", "==", auth.currentUser.uid),
-        where("pdfId", "==", pdfId)
+        where("chapterId", "==", data.chapterId)
       );
 
       const progressSnap = await getDocs(q);
@@ -45,87 +47,99 @@ function PdfViewer() {
         return;
       }
 
-      // ⏱ Unlock after 1 minute in document
+      // unlock after 1 min
       timerRef.current = setTimeout(async () => {
         await addDoc(collection(db, "user_progress"), {
           userId: auth.currentUser.uid,
           courseId: data.courseId,
-          pdfId: pdfId,
-
-          // ✅ MUST MATCH CoursePage
-          orderCompleted: data.order,
-
+          chapterId: data.chapterId,
           completedAt: serverTimestamp()
         });
 
         setCompleted(true);
-      }, 60000); // 60 seconds
+      }, 60000);
     };
 
-    loadPdf();
+    loadMaterial();
 
     return () => clearTimeout(timerRef.current);
   }, [pdfId]);
 
-  if (!pdf) {
+  if (!material) {
     return (
-      <div className="login-container">
-        <div className="login-card fade-in" style={{ padding: "3rem" }}>
-          <h2 className="title" style={{ fontSize: "2rem", margin: 0 }}>⏳ Loading document...</h2>
+      <div className="loading-container">
+        <div className="loading-card">
+          <h2><span className="spinner">⏳</span> Loading Material...</h2>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fade-in" style={{ height: "100vh", display: "flex", flexDirection: "column", background: "var(--bg-color)" }}>
+    <div className="viewer-container">
 
-      {/* Top bar */}
-      <div style={{
-        padding: "1.5rem 2rem",
-        background: "var(--accent-yellow)",
-        borderBottom: "5px solid var(--border-color)",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        boxShadow: "0px 8px 0px var(--border-color)",
-        position: "relative",
-        zIndex: 10
-      }}>
-        <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
-          <button onClick={() => navigate(-1)} className="btn btn-secondary" style={{ padding: "0.5rem 1rem" }}>
-            ⬅ Back
-          </button>
+      {/* Header */}
+      <div className="viewer-header fade-in">
+        <button
+          className="back-btn"
+          onClick={() => navigate(-1)}
+        >
+          ← Back
+        </button>
 
-          <h1 className="title" style={{ fontSize: "2rem", margin: 0, textShadow: "2px 2px 0px var(--border-color)" }}>{pdf.title}</h1>
+        <h2>{material.title}</h2>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          {completed && (
+            <span className="status-completed">✓ Completed</span>
+          )}
+          <ThemeToggle />
         </div>
-
-        {completed && (
-          <span className="badge" style={{ background: "var(--accent-green)", fontSize: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span>✓</span> Completed
-          </span>
-        )}
       </div>
 
-      {/* PDF Viewer */}
-      <div style={{ flex: 1, padding: "2rem", display: "flex", justifyContent: "center" }}>
-        <div className="brutal-card delay-1" style={{ width: "100%", maxWidth: "1200px", padding: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-          <div style={{ background: "var(--border-color)", color: "#fff", padding: "0.5rem 1rem", fontWeight: "700", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span>{pdf.title}</span>
-            <span style={{ fontSize: "0.8rem", opacity: 0.8 }}>PDF Document</span>
-          </div>
+      {/* PDF */}
+      {material.type === "pdf" && (
+        <div className="viewer-frame fade-in delay-1">
           <iframe
-            src={pdf.content}
-            title="PDF Viewer"
-            style={{
-              width: "100%",
-              flex: 1,
-              border: "none",
-              background: "#eee"
-            }}
+            src={material.content}
+            title={material.title}
           />
         </div>
-      </div>
+      )}
+
+      {/* VIDEO */}
+      {material.type === "video" && (
+        <div className="video-container fade-in delay-1" style={{ maxWidth: "900px", margin: "0 auto" }}>
+          <iframe
+            src={material.content}
+            allowFullScreen
+            title={material.title}
+          />
+        </div>
+      )}
+
+      {/* LINK */}
+      {material.type === "link" && (
+        <div className="fade-in delay-1" style={{ textAlign: "center", marginTop: "2rem" }}>
+          <a
+            href={material.content}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-primary"
+            style={{ fontSize: "1.1rem", padding: "1rem 2rem" }}
+          >
+            Open Link ↗
+          </a>
+        </div>
+      )}
+
+      {/* NOTE */}
+      {material.type === "note" && (
+        <div className="note-content fade-in delay-1" style={{ maxWidth: "800px", margin: "0 auto", marginTop: "1rem" }}>
+          {material.content}
+        </div>
+      )}
+
     </div>
   );
 }

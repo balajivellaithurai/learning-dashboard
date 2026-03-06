@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   collection,
@@ -12,26 +12,31 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import MaterialUploader from "../components/MaterialUploader";
+import ThemeToggle from "../components/ThemeToggle";
 
 function CoursePage() {
+
   const { courseId } = useParams();
   const navigate = useNavigate();
 
   const [course, setCourse] = useState(null);
   const [chapters, setChapters] = useState([]);
   const [materials, setMaterials] = useState({});
+  const [completedChapters, setCompletedChapters] = useState([]);
   const [newTitle, setNewTitle] = useState("");
 
-  const isInstructor = auth.currentUser?.email === course?.instructorEmail;
+  const timerRef = useRef(null);
 
-  // Load course
+  const isInstructor =
+    auth.currentUser?.email === course?.instructorEmail;
+
   const loadCourse = async () => {
     const snap = await getDoc(doc(db, "courses", courseId));
     if (snap.exists()) setCourse(snap.data());
   };
 
-  // Load chapters
   const loadChapters = async () => {
+
     const q = query(
       collection(db, "chapters"),
       where("courseId", "==", courseId)
@@ -46,35 +51,89 @@ function CoursePage() {
     setChapters(sorted);
   };
 
-  // Load materials
   const loadMaterials = async () => {
+
     const snap = await getDocs(collection(db, "materials"));
 
     const grouped = {};
 
     snap.docs.forEach(d => {
       const data = d.data();
-      if (!grouped[data.chapterId]) grouped[data.chapterId] = [];
-      grouped[data.chapterId].push({ id: d.id, ...data });
+
+      if (!grouped[data.chapterId])
+        grouped[data.chapterId] = [];
+
+      grouped[data.chapterId].push({
+        id: d.id,
+        ...data
+      });
     });
 
     setMaterials(grouped);
+  };
+
+  const loadProgress = async () => {
+
+    if (!auth.currentUser) return;
+
+    const q = query(
+      collection(db, "user_progress"),
+      where("userId", "==", auth.currentUser.uid),
+      where("courseId", "==", courseId)
+    );
+
+    const snap = await getDocs(q);
+
+    const list = snap.docs.map(d => d.data().chapterId);
+
+    setCompletedChapters(list);
   };
 
   useEffect(() => {
     loadCourse();
     loadChapters();
     loadMaterials();
+    loadProgress();
   }, [courseId]);
 
-  const addChapter = async () => {
-    if (!newTitle) return alert("Enter chapter title");
+  const startTimer = (chapterId) => {
 
-    await addDoc(collection(db, "chapters"), {
-      courseId,
-      title: newTitle,
-      order: chapters.length + 1
-    });
+    if (!auth.currentUser) return;
+    if (isInstructor) return;
+    if (completedChapters.includes(chapterId)) return;
+
+    clearTimeout(timerRef.current);
+
+    timerRef.current = setTimeout(async () => {
+
+      await addDoc(
+        collection(db, "user_progress"),
+        {
+          userId: auth.currentUser.uid,
+          courseId,
+          chapterId
+        }
+      );
+
+      loadProgress();
+
+    }, 60000);
+
+  };
+
+  const addChapter = async () => {
+
+    if (!newTitle)
+      return alert("Enter title");
+
+    await addDoc(
+      collection(db, "chapters"),
+      {
+        courseId,
+        title: newTitle,
+        order: chapters.length + 1
+      }
+    );
 
     setNewTitle("");
     loadChapters();
@@ -85,247 +144,207 @@ function CoursePage() {
     loadMaterials();
   };
 
+  const deleteChapter = async (id) => {
+
+    if (!window.confirm("Delete this day and all its materials?"))
+      return;
+
+    await deleteDoc(doc(db, "chapters", id));
+    loadChapters();
+  };
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case "pdf": return "📄";
+      case "video": return "🎬";
+      case "link": return "🔗";
+      case "note": return "📝";
+      default: return "📁";
+    }
+  };
+
   if (!course)
-    return (
-      <div className="login-container">
-        <div className="login-card fade-in" style={{ padding: "2rem" }}>
-          <h2 className="title" style={{ fontSize: "2rem", margin: 0 }}>
-            LOADING...
-          </h2>
-        </div>
-      </div>
-    );
+    return <h2>Loading Course...</h2>;
 
   return (
-    <div className="dashboard-container">
-      <header className="nav-header fade-in">
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          <button
-            className="btn btn-secondary"
-            onClick={() => navigate(-1)}
-            style={{ width: "fit-content", padding: "0.5rem 1rem" }}
-          >
-            ⬅ Back
-          </button>
-          <h1 className="title" style={{ fontSize: "2.5rem", marginTop: "1rem" }}>
-            {course.title}
-          </h1>
-          <div className="subtitle" style={{ marginBottom: 0 }}>
-            Course Outline & Materials
-          </div>
-        </div>
-      </header>
 
-      {/* Instructor Add Chapter */}
+    <div className="dashboard-container">
+
+      <div className="course-page-header">
+        <button className="back-btn" onClick={() => navigate(-1)}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          Back
+        </button>
+        <h1 style={{ margin: 0 }}>{course.title}</h1>
+        <ThemeToggle />
+      </div>
+
       {isInstructor && (
-        <div
-          className="brutal-card fade-in delay-1"
-          style={{
-            marginBottom: "2rem",
-            background: "var(--accent-green)",
-            flexDirection: "row",
-            alignItems: "flex-end",
-            gap: "1rem"
-          }}
-        >
-          <div className="input-group" style={{ marginBottom: 0, flex: 1 }}>
-            <label
-              className="input-label"
-              style={{ background: "#fff" }}
-            >
-              Add New Day / Section
-            </label>
-            <input
-              className="form-input"
-              placeholder="e.g. Day 1: Introduction"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-            />
-          </div>
+        <div className="add-day-form">
+          <input
+            className="form-input"
+            placeholder="New day title..."
+            value={newTitle}
+            onChange={e => setNewTitle(e.target.value)}
+          />
           <button className="btn btn-primary" onClick={addChapter}>
-            Add Day ➕
+            + Add Day
           </button>
         </div>
       )}
 
-      {/* Chapters */}
-      <div
-        className="fade-in delay-2"
-        style={{ display: "flex", flexDirection: "column", gap: "2rem" }}
-      >
-        {chapters.length === 0 ? (
-          <div className="empty-state">
-            <p>No chapters available yet.</p>
-          </div>
-        ) : (
-          chapters.map((chapter, index) => (
+      <div className="course-timeline">
+        {chapters.map((chapter, index) => {
+
+          const unlocked =
+            isInstructor ||
+            index === 0 ||
+            completedChapters.includes(
+              chapters[index - 1]?.id
+            );
+
+          const completed =
+            completedChapters.includes(chapter.id);
+
+          return (
             <div
               key={chapter.id}
-              className="brutal-card"
-              style={{ background: "#fff", padding: "2rem" }}
+              className={`chapter-card ${!unlocked ? "locked" : ""} ${completed ? "completed" : ""}`}
+              style={{ padding: 0 }}
             >
-              <h3 className="section-title">
-                <span
-                  className="badge"
-                  style={{
-                    background: "var(--accent-yellow)",
-                    marginRight: "1rem",
-                    boxShadow: "none",
-                    transform: "none"
-                  }}
-                >
-                  {index + 1}
-                </span>
-                {chapter.title}
-              </h3>
-
-              {/* Materials */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1rem",
-                  marginTop: "1.5rem"
-                }}
-              >
-                {!materials[chapter.id] ||
-                materials[chapter.id].length === 0 ? (
-                  <p
-                    style={{
-                      fontStyle: "italic",
-                      opacity: 0.7
-                    }}
-                  >
-                    No materials added yet.
-                  </p>
-                ) : (
-                  materials[chapter.id].map((mat) => (
-                    <div
-                      key={mat.id}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "1rem",
-                        background: "var(--bg-color)",
-                        border: "3px solid var(--border-color)",
-                        padding: "1rem",
-                        boxShadow: "4px 4px 0px var(--border-color)"
-                      }}
-                    >
-                      {/* Header */}
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center"
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontWeight: "700",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.5rem"
-                          }}
-                        >
-                          <span style={{ fontSize: "1.5rem" }}>
-                            {mat.type === "pdf" && "📄"}
-                            {mat.type === "link" && "🔗"}
-                            {mat.type === "note" && "📝"}
-                            {mat.type === "video" && "🎥"}
-                          </span>
-                          {mat.title}
-                        </div>
-
-                        {isInstructor && (
-                          <button
-                            className="btn btn-logout"
-                            style={{ padding: "0.5rem 1rem" }}
-                            onClick={() => deleteMaterial(mat.id)}
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Content */}
-                      {mat.type === "pdf" && (
-                        <button
-                          className="btn btn-primary"
-                          style={{ width: "fit-content" }}
-                          onClick={() => navigate(`/pdf/${mat.id}`)}
-                        >
-                          Open PDF
-                        </button>
-                      )}
-
-                      {mat.type === "link" && (
-                        <a
-                          href={mat.content}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="btn btn-primary"
-                          style={{
-                            width: "fit-content",
-                            textDecoration: "none"
-                          }}
-                        >
-                          Visit Link
-                        </a>
-                      )}
-
-                      {mat.type === "note" && (
-                        <div
-                          style={{
-                            padding: "1rem",
-                            background: "#fff",
-                            border: "2px dashed var(--border-color)"
-                          }}
-                        >
-                          {mat.content}
-                        </div>
-                      )}
-
-                      {mat.type === "video" && (
-                        <div
-                          style={{
-                            position: "relative",
-                            paddingBottom: "56.25%",
-                            height: 0,
-                            overflow: "hidden",
-                            border: "3px solid var(--border-color)"
-                          }}
-                        >
-                          <iframe
-                            src={mat.content}
-                            title="Video"
-                            allowFullScreen
-                            style={{
-                              position: "absolute",
-                              top: 0,
-                              left: 0,
-                              width: "100%",
-                              height: "100%",
-                              border: "none"
-                            }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
+              <div className={`timeline-dot ${completed ? "dot-completed" : !unlocked ? "dot-locked" : "dot-active"}`}></div>
+              <div className="chapter-header">
+                <div className="chapter-title">
+                  <span className="chapter-day-badge">Day {index + 1}</span>
+                  {chapter.title}
+                </div>
+                <div className="chapter-status">
+                  {completed ? (
+                    <span className="status-completed">✓ Completed</span>
+                  ) : !unlocked ? (
+                    <span className="status-locked">🔒 Locked</span>
+                  ) : null}
+                </div>
               </div>
 
-              {/* Add Material */}
-              {isInstructor && (
-                <MaterialUploader
-                  chapterId={chapter.id}
-                  onUpload={loadMaterials}
-                />
+              {unlocked && (
+                <div className="chapter-body">
+                  <div className="materials-list">
+                    {materials[chapter.id]?.map(mat => (
+                      <div key={mat.id} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+
+                        <div className="material-item">
+                          <div className="material-info">
+                            <div className={`material-type-icon ${mat.type}`}>
+                              {getTypeIcon(mat.type)}
+                            </div>
+                            <div className="material-title">{mat.title}</div>
+                          </div>
+
+                          <div className="material-actions">
+                            {mat.type === "pdf" && (
+                              <button
+                                className="btn btn-sm btn-accent-blue"
+                                onClick={() => {
+                                  startTimer(chapter.id);
+                                  navigate(`/pdf/${mat.id}`);
+                                }}
+                              >
+                                Open PDF
+                              </button>
+                            )}
+
+                            {mat.type === "link" && (
+                              <a
+                                className="btn btn-sm btn-accent-cyan"
+                                href={mat.content}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={() => startTimer(chapter.id)}
+                              >
+                                Open Link
+                              </a>
+                            )}
+
+                            {isInstructor && (
+                              <button
+                                className="btn btn-sm btn-danger"
+                                onClick={() => deleteMaterial(mat.id)}
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {mat.type === "video" && (
+                          <div className="video-container">
+                            <iframe
+                              src={mat.content}
+                              width="100%"
+                              height="100%"
+                              onLoad={() => startTimer(chapter.id)}
+                            />
+                          </div>
+                        )}
+
+                        {mat.type === "note" && (
+                          <div
+                            className="note-content"
+                            onClick={() => startTimer(chapter.id)}
+                          >
+                            {mat.content}
+                          </div>
+                        )}
+
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* QUIZ BUTTON */}
+                  <div style={{ marginTop: 20, marginBottom: 20, display: "flex", gap: "10px", alignItems: "center" }}>
+                    {isInstructor && (
+                      <button
+                        className="btn btn-sm btn-accent-purple"
+                        onClick={() => navigate(`/create-quiz/${chapter.id}`)}
+                      >
+                        🧪 Create Quiz
+                      </button>
+                    )}
+
+                    {!isInstructor && (
+                      <button
+                        className="btn btn-sm btn-accent-yellow"
+                        onClick={() => navigate(`/quiz/${chapter.id}`)}
+                      >
+                        🧪 Take Quiz
+                      </button>
+                    )}
+                  </div>
+
+                  {isInstructor && (
+                    <MaterialUploader
+                      chapterId={chapter.id}
+                      onUpload={loadMaterials}
+                    />
+                  )}
+
+                </div>
+
               )}
+
             </div>
-          ))
+
+          );
+        })}
+
+        {chapters.length === 0 && !isInstructor && (
+          <div className="empty-state fade-in">
+            <div className="empty-state-icon">🚧</div>
+            <p>Course content is being prepared.</p>
+          </div>
         )}
+
       </div>
     </div>
   );

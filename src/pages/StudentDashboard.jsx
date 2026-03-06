@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useNavigate } from "react-router-dom";
+import ThemeToggle from "../components/ThemeToggle";
 
 function StudentDashboard() {
   const [courses, setCourses] = useState([]);
@@ -23,7 +24,10 @@ function StudentDashboard() {
           <h1 className="title">Student <span className="text-gradient">Dashboard</span></h1>
           <div className="subtitle" style={{ marginBottom: 0 }}>Choose a course to continue learning</div>
         </div>
-        <button className="btn btn-logout" onClick={() => auth.signOut()}>Logout</button>
+        <div className="nav-actions">
+          <ThemeToggle />
+          <button className="btn btn-logout" onClick={() => auth.signOut()}>Logout</button>
+        </div>
       </header>
 
       {courses.length === 0 ? (
@@ -37,13 +41,10 @@ function StudentDashboard() {
             <div
               key={course.id}
               className="brutal-card"
-              style={{ cursor: "pointer", display: "flex", flexDirection: "column", justifyContent: "space-between" }}
+              style={{ cursor: "pointer" }}
               onClick={() => navigate(`/course/${course.id}`)}
-              onMouseDown={(e) => { e.currentTarget.style.transform = "translate(4px, 4px)"; e.currentTarget.style.boxShadow = "2px 2px 0px var(--border-color)"; }}
-              onMouseUp={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}
             >
-              <div>
+              <div style={{ flex: 1 }}>
                 <h2 style={{ fontSize: "1.5rem", fontWeight: "700", marginBottom: "0.5rem" }}>{course.title}</h2>
                 <p style={{ fontWeight: "500", marginBottom: "1rem" }}>{course.description}</p>
               </div>

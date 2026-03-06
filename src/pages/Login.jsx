@@ -40,53 +40,84 @@ function Login() {
     };
 
     return (
-        <div className="login-container">
-            <div
-                className="login-card fade-in"
-                style={{
-                    background: "var(--accent-yellow)",
-                    maxWidth: "460px",
-                    padding: "4rem 3rem",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center"
-                }}
-            >
-                <div className="login-logo" style={{ transform: "none", marginBottom: "0" }}>
+        <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#fae1de", // Exact light peach/pink extracted from the provided image
+            backgroundImage: "radial-gradient(#000 1.5px, transparent 1.5px)",
+            backgroundSize: "32px 32px",
+            backgroundPosition: "0 0",
+            fontFamily: "system-ui, -apple-system, sans-serif",
+            zIndex: 99999
+        }}>
+            <div style={{
+                backgroundColor: "#ffd147", // Exact matching yellow extracted from the provided image
+                border: "6px solid #000",
+                boxShadow: "16px 16px 0px #000",
+                padding: "0px 40px",
+                width: "480px",
+                height: "460px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                boxSizing: "border-box"
+            }}>
+                <div style={{ marginBottom: "20px" }}>
                     <img
                         src="https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/assets/Graduation%20cap/3D/graduation_cap_3d.png"
                         alt="Graduation Cap"
-                        style={{ width: "80px", height: "80px" }}
+                        style={{ width: "65px", height: "65px", filter: "drop-shadow(3px 3px 0px rgba(0,0,0,0.8))" }}
                     />
                 </div>
 
-                <h1
-                    className="title"
-                    style={{
+                <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    marginBottom: "25px"
+                }}>
+                    <span style={{
+                        fontFamily: "Impact, 'Arial Black', sans-serif",
                         fontSize: "3rem",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "0.2rem",
-                        marginBottom: "2rem"
-                    }}
-                >
-                    LEARNING <span className="text-gradient" style={{ transform: "rotate(-2deg)", background: "var(--accent-purple)", padding: "0 0.5rem" }}>PATH</span>
-                </h1>
+                        color: "#000",
+                        letterSpacing: "1px"
+                    }}>
+                        LEARNING
+                    </span>
+                    <span style={{
+                        backgroundColor: "#e880ff", // Matching precise pink/violet
+                        padding: "0px 6px",
+                        border: "5px solid #000",
+                        boxShadow: "4px 4px 0px #000",
+                        transform: "rotate(-3deg)",
+                        color: "#fff",
+                        fontFamily: "Impact, 'Arial Black', sans-serif",
+                        fontSize: "3rem",
+                        letterSpacing: "2px",
+                        lineHeight: "1.1",
+                        marginTop: "8px"
+                    }}>
+                        PATH
+                    </span>
+                </div>
 
-                <div
-                    className="subtitle"
-                    style={{
-                        transform: "none",
-                        padding: "0.75rem 2rem",
-                        background: "#fff",
-                        marginBottom: "3rem",
-                        fontWeight: "600",
-                        border: "4px solid var(--border-color)",
-                        boxShadow: "5px 5px 0px var(--border-color)",
-                        color: "var(--border-color)"
-                    }}
-                >
+                <div style={{
+                    backgroundColor: "#fff",
+                    border: "4px solid #000",
+                    boxShadow: "5px 5px 0px #000",
+                    padding: "10px 24px",
+                    fontWeight: "700",
+                    fontSize: "1.05rem",
+                    color: "#000",
+                    marginBottom: "35px"
+                }}>
                     Welcome back.
                 </div>
 
@@ -95,30 +126,30 @@ function Login() {
                     disabled={loading}
                     style={{
                         width: "100%",
-                        background: "#fff",
-                        border: "5px solid var(--border-color)",
-                        padding: "1rem",
-                        fontSize: "1.1rem",
-                        fontWeight: "700",
-                        cursor: "pointer",
+                        maxWidth: "360px",
+                        backgroundColor: "#fff",
+                        border: "4px solid #000",
+                        boxShadow: "6px 6px 0px #000",
+                        padding: "14px",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         gap: "12px",
-                        boxShadow: "6px 6px 0px var(--border-color)",
-                        opacity: loading ? 0.7 : 1,
+                        fontWeight: "800",
+                        fontSize: "1.1rem",
+                        cursor: "pointer",
+                        color: "#000",
                         transition: "transform 0.1s, box-shadow 0.1s",
-                        color: "var(--border-color)"
+                        opacity: loading ? 0.7 : 1
                     }}
-                    onMouseDown={(e) => { e.currentTarget.style.transform = "translate(4px, 4px)"; e.currentTarget.style.boxShadow = "2px 2px 0px var(--border-color)"; }}
-                    onMouseUp={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "6px 6px 0px var(--border-color)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "6px 6px 0px var(--border-color)"; }}
+                    onMouseOver={(e) => { e.currentTarget.style.transform = "translate(2px, 2px)"; e.currentTarget.style.boxShadow = "4px 4px 0px #111"; }}
+                    onMouseOut={(e) => { e.currentTarget.style.transform = "translate(0px, 0px)"; e.currentTarget.style.boxShadow = "6px 6px 0px #111"; }}
                 >
                     {loading ? (
-                        <span>Loading...</span>
+                        <span>⏳ Loading...</span>
                     ) : (
                         <>
-                            <svg viewBox="0 0 24 24" style={{ width: "24px", height: "24px" }}>
+                            <svg viewBox="0 0 24 24" style={{ width: "22px", height: "22px" }}>
                                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                                 <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />

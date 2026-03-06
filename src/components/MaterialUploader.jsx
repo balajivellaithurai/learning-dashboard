@@ -7,8 +7,11 @@ function MaterialUploader({ chapterId, onUpload }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [file, setFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
   const fileRef = useRef(null);
 
+  // convert file → base64
   const convertToBase64 = (file) =>
     new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -17,20 +20,21 @@ function MaterialUploader({ chapterId, onUpload }) {
       reader.onerror = reject;
     });
 
-  // 🔥 AUTO CONVERT YOUTUBE LINK TO EMBED FORMAT
+  // convert youtube link → embed
   const convertYouTubeToEmbed = (url) => {
     try {
+      if (!url) return url;
+
       if (url.includes("youtube.com/watch?v=")) {
-        const videoId = url.split("v=")[1].split("&")[0];
-        return `https://www.youtube.com/embed/${videoId}`;
+        const id = url.split("v=")[1].split("&")[0];
+        return `https://www.youtube.com/embed/${id}`;
       }
 
       if (url.includes("youtu.be/")) {
-        const videoId = url.split("youtu.be/")[1].split("?")[0];
-        return `https://www.youtube.com/embed/${videoId}`;
+        const id = url.split("youtu.be/")[1].split("?")[0];
+        return `https://www.youtube.com/embed/${id}`;
       }
 
-      // If already embed format, return as is
       if (url.includes("youtube.com/embed/")) {
         return url;
       }
@@ -44,86 +48,134 @@ function MaterialUploader({ chapterId, onUpload }) {
   const handleUpload = async () => {
     if (!title) return alert("Enter title");
 
-    let finalContent = content;
+    setUploading(true);
 
-    if (type === "pdf") {
-      if (!file) return alert("Select a PDF");
-      finalContent = await convertToBase64(file);
+    try {
+      let finalContent = content;
+
+      // PDF
+      if (type === "pdf") {
+        if (!file) { setUploading(false); return alert("Select PDF"); }
+        finalContent = await convertToBase64(file);
+      }
+
+      // VIDEO
+      if (type === "video") {
+        if (!content) { setUploading(false); return alert("Paste YouTube link"); }
+        finalContent = convertYouTubeToEmbed(content);
+      }
+
+      // LINK / NOTE just use text
+
+      await addDoc(collection(db, "materials"), {
+        chapterId,
+        type,
+        title,
+        content: finalContent,
+      });
+
+      // reset
+      setTitle("");
+      setContent("");
+      setFile(null);
+      setType("pdf");
+
+      if (fileRef.current) fileRef.current.value = "";
+
+      if (onUpload) onUpload();
+    } finally {
+      setUploading(false);
     }
+  };
 
-    if (type === "video") {
-      if (!content) return alert("Paste YouTube link");
-      finalContent = convertYouTubeToEmbed(content);
+  const getPlaceholderIcon = () => {
+    switch (type) {
+      case "pdf": return "📄";
+      case "video": return "🎬";
+      case "link": return "🔗";
+      case "note": return "📝";
+      default: return "📁";
     }
-
-    await addDoc(collection(db, "materials"), {
-      chapterId,
-      type,
-      title,
-      content: finalContent
-    });
-
-    setTitle("");
-    setContent("");
-    setFile(null);
-    if (fileRef.current) fileRef.current.value = "";
-
-    if (onUpload) onUpload();
   };
 
   return (
-    <div
-      style={{
-        marginTop: 15,
-        borderTop: "1px dashed #ccc",
-        paddingTop: 10
-      }}
-    >
-      <select
-        value={type}
-        onChange={(e) => setType(e.target.value)}
-      >
-        <option value="pdf">PDF</option>
-        <option value="link">Link</option>
-        <option value="note">Note</option>
-        <option value="video">YouTube Video</option>
-      </select>
+    <div className="uploader-section">
 
-      <input
-        placeholder="Material Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        style={{ display: "block", marginTop: 8 }}
-      />
+      <div className="uploader-header">
+        <h4>{getPlaceholderIcon()} Add Material</h4>
+      </div>
 
-      {type === "pdf" && (
-        <input
-          type="file"
-          accept="application/pdf"
-          ref={fileRef}
-          onChange={(e) => setFile(e.target.files[0])}
-          style={{ marginTop: 8 }}
-        />
-      )}
+      <div className="uploader-form">
 
-      {(type === "link" || type === "note" || type === "video") && (
-        <textarea
-          placeholder={
-            type === "link"
-              ? "Paste URL here"
-              : type === "video"
-              ? "Paste YouTube link here"
-              : "Write notes here"
-          }
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          style={{ marginTop: 8, width: "100%" }}
-        />
-      )}
+        {/* TYPE + TITLE */}
+        <div className="uploader-row">
+          <select
+            className="uploader-select"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          >
+            <option value="pdf">📄 PDF</option>
+            <option value="video">🎬 YouTube Video</option>
+            <option value="link">🔗 Link</option>
+            <option value="note">📝 Note</option>
+          </select>
 
-      <button onClick={handleUpload} style={{ marginTop: 8 }}>
-        Add Material
-      </button>
+          <input
+            className="uploader-input"
+            placeholder="Material title..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+        </div>
+
+        {/* PDF FILE */}
+        {type === "pdf" && (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <input
+              type="file"
+              accept="application/pdf"
+              ref={fileRef}
+              onChange={(e) => setFile(e.target.files[0])}
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              className="file-input-label"
+              onClick={() => fileRef.current?.click()}
+            >
+              📎 Choose File
+            </button>
+            <span className="file-name">
+              {file ? file.name : "No file chosen"}
+            </span>
+          </div>
+        )}
+
+        {/* TEXT / LINK / VIDEO */}
+        {type !== "pdf" && (
+          <textarea
+            className="uploader-textarea"
+            placeholder={
+              type === "video"
+                ? "Paste YouTube link (e.g. https://youtube.com/watch?v=...)"
+                : type === "link"
+                  ? "Paste URL (e.g. https://example.com)"
+                  : "Write your notes here..."
+            }
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+          />
+        )}
+
+        <button
+          className="btn btn-accent-green"
+          onClick={handleUpload}
+          disabled={uploading}
+          style={{ alignSelf: "flex-start" }}
+        >
+          {uploading ? "⏳ Uploading..." : "➕ Add Material"}
+        </button>
+      </div>
     </div>
   );
 }
