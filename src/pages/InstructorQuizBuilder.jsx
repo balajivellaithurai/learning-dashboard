@@ -4,6 +4,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 
 function InstructorQuizBuilder() {
+
   const { chapterId } = useParams();
 
   const [questions, setQuestions] = useState([]);
@@ -21,73 +22,34 @@ function InstructorQuizBuilder() {
   };
 
   const addQuestion = () => {
+
     if (!question.trim()) return alert("Enter question");
 
-    if (options.some((opt) => !opt.trim())) {
-      return alert("Please fill all 4 options");
-    }
+    if (options.some(opt => !opt.trim()))
+      return alert("Fill all options");
 
     const q = {
       question: question.trim(),
-      options: options.map((opt) => opt.trim()),
-      correctIndex: Number(correctIndex)
+      options: options.map(o => o.trim()),
+      correctIndex,
+      topic: "Manual"
     };
 
-    setQuestions((prev) => [...prev, q]);
+    setQuestions(prev => [...prev, q]);
 
     setQuestion("");
     setOptions(["", "", "", ""]);
     setCorrectIndex(0);
   };
 
-  const normalizeQuestions = (raw) => {
-    if (!Array.isArray(raw)) {
-      throw new Error("AI did not return an array");
-    }
-
-    const normalized = raw
-      .map((item) => {
-        const safeQuestion =
-          typeof item?.question === "string" ? item.question.trim() : "";
-
-        const safeOptions = Array.isArray(item?.options)
-          ? item.options.map((opt) => String(opt).trim()).slice(0, 4)
-          : [];
-
-        const safeCorrectIndex = Number(item?.correctIndex);
-
-        if (
-          !safeQuestion ||
-          safeOptions.length !== 4 ||
-          safeOptions.some((opt) => !opt) ||
-          !Number.isInteger(safeCorrectIndex) ||
-          safeCorrectIndex < 0 ||
-          safeCorrectIndex > 3
-        ) {
-          return null;
-        }
-
-        return {
-          question: safeQuestion,
-          options: safeOptions,
-          correctIndex: safeCorrectIndex
-        };
-      })
-      .filter(Boolean);
-
-    if (normalized.length === 0) {
-      throw new Error("No valid questions found in AI response");
-    }
-
-    return normalized;
-  };
-
-  // ---------------- AI QUIZ GENERATION ----------------
+  // 🔥 GEMINI AI GENERATION (FULL FIXED)
   const generateQuizAI = async () => {
+
     const topic = prompt("Enter topic for quiz");
-    if (!topic || !topic.trim()) return;
+    if (!topic) return;
 
     try {
+
       setLoading(true);
 
       const response = await fetch(
@@ -105,211 +67,132 @@ function InstructorQuizBuilder() {
                 parts: [
                   {
                     text: `
-Generate exactly 5 multiple choice questions about "${topic}".
+Generate 5 MCQ questions about "${topic}".
 
-Rules:
-- Return ONLY a JSON array
-- Each object must have:
-  - question (string)
-  - options (array of exactly 4 strings)
-  - correctIndex (number: 0 to 3)
-- No markdown
+STRICT RULES:
+- Return ONLY JSON
 - No explanation
-- No extra text
+- No markdown
+- Each question MUST include topic
 
-Example:
+FORMAT:
+
 [
-  {
-    "question": "What is React?",
-    "options": ["Library", "Database", "Language", "Compiler"],
-    "correctIndex": 0
-  }
+{
+"question":"...",
+"options":["A","B","C","D"],
+"correctIndex":0,
+"topic":"Specific concept name"
+}
 ]
 `
                   }
                 ]
               }
-            ],
-            generationConfig: {
-              response_mime_type: "application/json",
-              response_schema: {
-                type: "ARRAY",
-                items: {
-                  type: "OBJECT",
-                  properties: {
-                    question: { type: "STRING" },
-                    options: {
-                      type: "ARRAY",
-                      items: { type: "STRING" }
-                    },
-                    correctIndex: { type: "INTEGER" }
-                  },
-                  required: ["question", "options", "correctIndex"]
-                }
-              }
-            }
+            ]
           })
         }
       );
 
       const data = await response.json();
-      console.log("Gemini RAW Response:", data);
 
-      if (!response.ok) {
-        console.error("Gemini API error:", data);
-        throw new Error(data?.error?.message || "Gemini request failed");
-      }
-
-      const text =
-        data?.candidates?.[0]?.content?.parts
-          ?.map((p) => p.text || "")
-          .join("")
-          .trim();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
       if (!text) {
-        alert("AI returned empty response");
+        alert("AI returned empty");
         return;
       }
 
-      const cleaned = text
-        .replace(/```json/gi, "")
-        .replace(/```/g, "")
-        .trim();
+      const cleaned = text.replace(/```/g, "").trim();
 
-      const parsed = JSON.parse(cleaned);
-      const validQuestions = normalizeQuestions(parsed);
+      let parsed = JSON.parse(cleaned);
 
-      setQuestions(validQuestions);
-      alert("Quiz generated successfully!");
+      // 🔥 FORCE topic if missing
+      parsed = parsed.map(q => ({
+        question: q.question || "No question",
+        options: q.options || ["A", "B", "C", "D"],
+        correctIndex: q.correctIndex ?? 0,
+        topic: q.topic || topic
+      }));
+
+      setQuestions(parsed);
+
+      alert("Quiz Generated!");
+
     } catch (err) {
-      console.error("AI generation error:", err);
-      alert(err.message || "AI generation failed");
+      console.error(err);
+      alert("AI generation failed");
     } finally {
       setLoading(false);
     }
   };
 
-  // ---------------- SAVE QUIZ ----------------
   const saveQuiz = async () => {
-    try {
-      if (questions.length === 0) {
-        return alert("Add questions first");
-      }
 
-      await addDoc(collection(db, "quizzes"), {
-        chapterId,
-        passMark: 60,
-        questions,
-        createdAt: serverTimestamp()
-      });
+    if (questions.length === 0)
+      return alert("Add questions first");
 
-      alert("Quiz Created!");
-    } catch (err) {
-      console.error("Save quiz error:", err);
-      alert("Failed to save quiz");
-    }
+    await addDoc(collection(db, "quizzes"), {
+      chapterId,
+      passMark: 60,
+      questions,
+      createdAt: serverTimestamp()
+    });
+
+    alert("Quiz Created!");
   };
 
   return (
     <div className="dashboard-container">
+
       <div className="course-page-header">
-        <button className="back-btn" onClick={() => window.history.back()}>
+        <button onClick={() => window.history.back()}>
           ← Back
         </button>
-
         <h1>Create Quiz</h1>
       </div>
 
-      <div
-        className="brutal-card"
-        style={{
-          maxWidth: 800,
-          margin: "0 auto",
-          gap: "1.5rem"
-        }}
-      >
+      <div className="brutal-card">
+
         <button
           className="btn btn-accent-purple"
           onClick={generateQuizAI}
-          disabled={loading}
         >
           {loading ? "Generating..." : "🤖 Generate Quiz With AI"}
         </button>
 
         <div className="input-group">
-          <label className="input-label">Question</label>
+          <label>Question</label>
           <input
-            className="form-input"
-            placeholder="Type your question here..."
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={e => setQuestion(e.target.value)}
           />
         </div>
 
-        <div
-          className="grid-layout"
-          style={{
-            gridTemplateColumns: "1fr 1fr",
-            gap: "1rem"
-          }}
-        >
-          {options.map((opt, i) => (
-            <div
-              key={i}
-              className="input-group"
-              style={{ marginBottom: 0 }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  marginBottom: "5px"
-                }}
-              >
-                <input
-                  type="radio"
-                  name="correct"
-                  checked={correctIndex === i}
-                  onChange={() => setCorrectIndex(i)}
-                />
+        {options.map((opt, i) => (
+          <div key={i}>
+            <input
+              type="radio"
+              checked={correctIndex === i}
+              onChange={() => setCorrectIndex(i)}
+            />
+            <input
+              value={opt}
+              onChange={e => updateOption(i, e.target.value)}
+            />
+          </div>
+        ))}
 
-                <label>Option {i + 1}</label>
-              </div>
-
-              <input
-                className="form-input"
-                placeholder={`Option ${i + 1}`}
-                value={opt}
-                onChange={(e) => updateOption(i, e.target.value)}
-              />
-            </div>
-          ))}
-        </div>
-
-        <button className="btn btn-accent-blue" onClick={addQuestion}>
+        <button onClick={addQuestion}>
           ➕ Add Question
         </button>
 
-        <hr />
+        <h3>Questions: {questions.length}</h3>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center"
-          }}
-        >
-          <h3>Questions Added: {questions.length}</h3>
+        <button onClick={saveQuiz}>
+          💾 Save Quiz
+        </button>
 
-          <button
-            className="btn btn-accent-green"
-            onClick={saveQuiz}
-            disabled={loading}
-          >
-            💾 Save Quiz
-          </button>
-        </div>
       </div>
     </div>
   );
