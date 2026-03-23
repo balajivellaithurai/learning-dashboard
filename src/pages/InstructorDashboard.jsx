@@ -62,6 +62,7 @@ function InstructorDashboard() {
 
     const handleLogout = async () => {
         await signOut(auth);
+        navigate("/");
     };
 
 

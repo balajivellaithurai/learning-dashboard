@@ -145,53 +145,123 @@ FORMAT:
   return (
     <div className="dashboard-container">
 
-      <div className="course-page-header">
-        <button onClick={() => window.history.back()}>
-          ← Back
-        </button>
-        <h1>Create Quiz</h1>
-      </div>
-
-      <div className="brutal-card">
-
-        <button
-          className="btn btn-accent-purple"
-          onClick={generateQuizAI}
-        >
-          {loading ? "Generating..." : "🤖 Generate Quiz With AI"}
-        </button>
-
-        <div className="input-group">
-          <label>Question</label>
-          <input
-            value={question}
-            onChange={e => setQuestion(e.target.value)}
-          />
+      <header className="nav-header fade-in">
+        <div>
+          <h1 className="title">Quiz <span className="text-gradient">Builder</span></h1>
+          <p className="subtitle" style={{ marginBottom: 0 }}>Create a new quiz or generate it with AI.</p>
         </div>
+        <div className="nav-actions">
+          <button className="btn btn-secondary" onClick={() => window.history.back()}>
+            ← Back to Course
+          </button>
+        </div>
+      </header>
 
-        {options.map((opt, i) => (
-          <div key={i}>
+      <div className="grid-layout fade-in delay-1">
+        
+        {/* Left side: Add/Generate question form */}
+        <section className="brutal-card" style={{ gap: "1.5rem" }}>
+          <h2 className="section-title">
+            <span style={{ fontSize: "1.2rem" }}>➕</span> Add New Question
+          </h2>
+
+          <button
+            className="btn btn-accent-purple"
+            onClick={generateQuizAI}
+            style={{ width: "100%", padding: "1rem", fontSize: "1.1rem" }}
+            disabled={loading}
+          >
+            {loading ? "Generating..." : "🤖 Generate Quiz With AI"}
+          </button>
+
+          <div className="input-group" style={{ marginBottom: 0 }}>
+            <label className="input-label">Question Text</label>
             <input
-              type="radio"
-              checked={correctIndex === i}
-              onChange={() => setCorrectIndex(i)}
-            />
-            <input
-              value={opt}
-              onChange={e => updateOption(i, e.target.value)}
+              className="form-input"
+              placeholder="e.g. What is the capital of France?"
+              value={question}
+              onChange={e => setQuestion(e.target.value)}
             />
           </div>
-        ))}
 
-        <button onClick={addQuestion}>
-          ➕ Add Question
-        </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <label className="input-label" style={{ width: "max-content", background: "var(--accent-cyan)" }}>Options</label>
+            {options.map((opt, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                <input
+                  type="radio"
+                  name="correctOption"
+                  checked={correctIndex === i}
+                  onChange={() => setCorrectIndex(i)}
+                  style={{ width: "24px", height: "24px", accentColor: "var(--accent-green)", cursor: "pointer" }}
+                  title="Mark as correct answer"
+                />
+                <input
+                  className="form-input"
+                  style={{ flex: 1, padding: "0.5rem 1rem", border: correctIndex === i ? "4px solid var(--accent-green)" : "4px solid var(--border-color)" }}
+                  placeholder={`Option ${i + 1}`}
+                  value={opt}
+                  onChange={e => updateOption(i, e.target.value)}
+                />
+              </div>
+            ))}
+          </div>
 
-        <h3>Questions: {questions.length}</h3>
+          <button className="btn btn-accent-yellow" onClick={addQuestion} style={{ marginTop: "1rem", alignSelf: "flex-start" }}>
+            ➕ Add Question to Quiz
+          </button>
+        </section>
 
-        <button onClick={saveQuiz}>
-          💾 Save Quiz
-        </button>
+        {/* Right side: Questions list and Save */}
+        <section className="brutal-card" style={{ gap: "1.5rem", height: "fit-content" }}>
+          <h2 className="section-title">
+            <span style={{ fontSize: "1.2rem" }}>📋</span> Quiz Preview
+          </h2>
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "1rem", borderBottom: "3px solid var(--border-color)" }}>
+            <h3 style={{ margin: 0, fontSize: "1.25rem", fontWeight: "800" }}>Total Questions:</h3>
+            <span className="badge" style={{ fontSize: "1.2rem", padding: "0.5rem 1rem", background: "var(--accent-blue)", color: "#fff" }}>
+              {questions.length}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxHeight: "500px", overflowY: "auto", paddingRight: "0.5rem" }}>
+            {questions.length === 0 ? (
+              <p style={{ fontWeight: "600", color: "var(--text-secondary)", textAlign: "center", padding: "2rem 0" }}>
+                No questions added yet. Add some questions manually or generate them with AI!
+              </p>
+            ) : (
+              questions.map((q, idx) => (
+                <div key={idx} style={{ padding: "1rem", border: "3px solid var(--border-color)", background: "var(--input-bg)", borderRadius: "0px", boxShadow: "4px 4px 0px var(--border-color)" }}>
+                  <p style={{ fontWeight: "800", marginBottom: "0.5rem", fontSize: "1.1rem" }}>{idx + 1}. {q.question}</p>
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                    {q.options.map((opt, i) => (
+                      <li key={i} style={{ 
+                        padding: "0.5rem", 
+                        background: q.correctIndex === i ? "var(--accent-green)" : "transparent",
+                        border: "3px solid var(--border-color)",
+                        fontWeight: "600",
+                        color: q.correctIndex === i ? "#000" : "inherit"
+                      }}>
+                        {String.fromCharCode(65 + i)}: {opt} {q.correctIndex === i && "✅"}
+                      </li>
+                    ))}
+                  </ul>
+                  {q.topic && <span className="badge" style={{ marginTop: "0.75rem", fontSize: "0.7rem", background: "var(--accent-pink)", color: "#fff", border: "2px solid var(--border-color)" }}>{q.topic}</span>}
+                </div>
+              ))
+            )}
+          </div>
+
+          <button 
+            className="btn btn-primary" 
+            onClick={saveQuiz} 
+            style={{ width: "100%", padding: "1rem", fontSize: "1.2rem", marginTop: "1rem" }}
+            disabled={questions.length === 0}
+          >
+            💾 Save Quiz & Publish
+          </button>
+        </section>
 
       </div>
     </div>

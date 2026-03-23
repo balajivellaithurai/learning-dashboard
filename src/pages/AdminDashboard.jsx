@@ -1,9 +1,13 @@
 import { auth } from "../firebase";
 import ThemeToggle from "../components/ThemeToggle";
+import { useNavigate } from "react-router-dom";
 
 function AdminDashboard() {
-    const handleLogout = () => {
-        auth.signOut();
+    const navigate = useNavigate();
+
+    const handleLogout = async () => {
+        await auth.signOut();
+        navigate("/");
     };
 
     return (

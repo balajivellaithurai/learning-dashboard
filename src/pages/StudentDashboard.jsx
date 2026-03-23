@@ -26,7 +26,7 @@ function StudentDashboard() {
         </div>
         <div className="nav-actions">
           <ThemeToggle />
-          <button className="btn btn-logout" onClick={() => auth.signOut()}>Logout</button>
+          <button className="btn btn-logout" onClick={async () => { await auth.signOut(); navigate("/"); }}>Logout</button>
         </div>
       </header>
 
