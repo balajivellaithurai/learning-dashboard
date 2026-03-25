@@ -30,6 +30,14 @@ function CoursePage() {
   const isInstructor =
     auth.currentUser?.email === course?.instructorEmail;
 
+  // 🔥 ADDED: Progress calculation
+  const progressPercent =
+    chapters.length === 0
+      ? 0
+      : Math.round(
+          (completedChapters.length / chapters.length) * 100
+        );
+
   const loadCourse = async () => {
     const snap = await getDoc(doc(db, "courses", courseId));
     if (snap.exists()) setCourse(snap.data());
@@ -84,7 +92,7 @@ function CoursePage() {
 
     const snap = await getDocs(q);
 
-    const list = snap.docs.map(d => d.data().chapterId);
+    const list = [...new Set(snap.docs.map(d => d.data().chapterId))];
 
     setCompletedChapters(list);
   };
@@ -179,6 +187,27 @@ function CoursePage() {
         <ThemeToggle />
       </div>
 
+      {/* 🔥 ADDED: Progress UI */}
+      <div style={{
+        marginBottom: "20px",
+        padding: "15px",
+        border: "3px solid var(--border-color)",
+        background: "var(--card-bg)"
+      }}>
+        <h3>📊 Progress: {progressPercent}%</h3>
+        <div style={{
+          height: "10px",
+          background: "#ccc",
+          marginTop: "10px"
+        }}>
+          <div style={{
+            width: `${progressPercent}%`,
+            height: "100%",
+            background: "#4caf50"
+          }} />
+        </div>
+      </div>
+
       {isInstructor && (
         <div className="add-day-form">
           <input
@@ -232,7 +261,6 @@ function CoursePage() {
                   <div className="materials-list">
                     {materials[chapter.id]?.map(mat => (
                       <div key={mat.id} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-
                         <div className="material-item">
                           <div className="material-info">
                             <div className={`material-type-icon ${mat.type}`}>
@@ -301,7 +329,6 @@ function CoursePage() {
                     ))}
                   </div>
 
-                  {/* QUIZ BUTTON */}
                   <div style={{ marginTop: 20, marginBottom: 20, display: "flex", gap: "10px", alignItems: "center" }}>
                     {isInstructor && (
                       <button
@@ -330,11 +357,9 @@ function CoursePage() {
                   )}
 
                 </div>
-
               )}
 
             </div>
-
           );
         })}
 

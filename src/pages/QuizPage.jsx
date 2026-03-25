@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import PracticeUpload from "../components/PracticeUpload";
 import { useParams } from "react-router-dom";
 import {
+  doc,
+  getDoc,
   collection,
-  query,
-  where,
-  getDocs,
   addDoc,
   serverTimestamp
 } from "firebase/firestore";
@@ -28,18 +27,19 @@ function QuizPage() {
 
     const loadQuiz = async () => {
 
-      const q = query(
-        collection(db, "quizzes"),
-        where("chapterId", "==", chapterId)
-      );
+      // ✅ FIXED: direct document fetch
+      const ref = doc(db, "quizzes", chapterId);
+      const snap = await getDoc(ref);
 
-      const snap = await getDocs(q);
-
-      if (!snap.empty) {
-        const data = snap.docs[0].data();
-        setQuiz(data);
-        setAnswers(new Array(data.questions.length).fill(-1));
+      if (!snap.exists()) {
+        console.log("No quiz found");
+        return;
       }
+
+      const data = snap.data();
+
+      setQuiz(data);
+      setAnswers(new Array(data.questions.length).fill(-1));
     };
 
     loadQuiz();
@@ -51,40 +51,47 @@ function QuizPage() {
     copy[qi] = oi;
     setAnswers(copy);
   };
+const submitQuiz = async () => {
 
-  const submitQuiz = async () => {
+  let correct = 0;
 
-    let correct = 0;
-    let weak = [];
+  // 🔥 CHANGED: ML-style weakness counting
+  let weakCount = {};
 
-    quiz.questions.forEach((q, i) => {
+  quiz.questions.forEach((q, i) => {
 
-      if (answers[i] === q.correctIndex) {
-        correct++;
-      } else {
-        weak.push(q.topic || "General");
-      }
+    const topic = q.topic || "General";
 
-    });
+    if (answers[i] === q.correctIndex) {
+      correct++;
+    } else {
+      weakCount[topic] = (weakCount[topic] || 0) + 1;
+    }
 
-    const percent = Math.round(
-      (correct / quiz.questions.length) * 100
-    );
+  });
 
-    setScore(percent);
-    setSubmitted(true);
+  const percent = Math.round(
+    (correct / quiz.questions.length) * 100
+  );
 
-    const uniqueWeak = [...new Set(weak)];
-    setWeakTopics(uniqueWeak);
+  setScore(percent);
+  setSubmitted(true);
 
-    await addDoc(collection(db, "quiz_attempts"), {
-      userId: auth.currentUser.uid,
-      chapterId,
-      score: percent,
-      createdAt: serverTimestamp()
-    });
+  // 🔥 CHANGED: sort weak topics by weakness
+  const sortedWeak = Object.entries(weakCount)
+    .sort((a, b) => b[1] - a[1])
+    .map(item => item[0]);
 
-  };
+  setWeakTopics(sortedWeak);
+
+  await addDoc(collection(db, "quiz_attempts"), {
+    userId: auth.currentUser.uid,
+    chapterId,
+    score: percent,
+    createdAt: serverTimestamp()
+  });
+
+};
 
   const extractJSON = (text) => {
     try {
@@ -304,7 +311,6 @@ Return ONLY JSON array.
         </div>
       </div>
 
-      {/* 🔥 WEAK AREA & AI RETRY UI OVERHAUL */}
       {submitted && weakTopics.length > 0 && (
         <div className="brutal-card fade-in delay-2" style={{ maxWidth: 800, margin: "3rem auto", border: "5px solid #ff3c00", boxShadow: "10px 10px 0px #ff3c00", background: "var(--card-bg)" }}>
           

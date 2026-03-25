@@ -158,7 +158,7 @@ FORMAT:
       </header>
 
       <div className="grid-layout fade-in delay-1">
-        
+
         {/* Left side: Add/Generate question form */}
         <section className="brutal-card" style={{ gap: "1.5rem" }}>
           <h2 className="section-title">
@@ -236,8 +236,8 @@ FORMAT:
                   <p style={{ fontWeight: "800", marginBottom: "0.5rem", fontSize: "1.1rem" }}>{idx + 1}. {q.question}</p>
                   <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                     {q.options.map((opt, i) => (
-                      <li key={i} style={{ 
-                        padding: "0.5rem", 
+                      <li key={i} style={{
+                        padding: "0.5rem",
                         background: q.correctIndex === i ? "var(--accent-green)" : "transparent",
                         border: "3px solid var(--border-color)",
                         fontWeight: "600",
@@ -253,9 +253,9 @@ FORMAT:
             )}
           </div>
 
-          <button 
-            className="btn btn-primary" 
-            onClick={saveQuiz} 
+          <button
+            className="btn btn-primary"
+            onClick={saveQuiz}
             style={{ width: "100%", padding: "1rem", fontSize: "1.2rem", marginTop: "1rem" }}
             disabled={questions.length === 0}
           >
