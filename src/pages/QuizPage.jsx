@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import PracticeUpload from "../components/PracticeUpload";
 import { useParams } from "react-router-dom";
 import {
-  doc,
-  getDoc,
   collection,
+  query,
+  where,
+  getDocs,
   addDoc,
   serverTimestamp
 } from "firebase/firestore";
@@ -27,16 +28,20 @@ function QuizPage() {
 
     const loadQuiz = async () => {
 
-      // ✅ FIXED: direct document fetch
-      const ref = doc(db, "quizzes", chapterId);
-      const snap = await getDoc(ref);
+      // 🔥 FIX: use query instead of doc
+      const q = query(
+        collection(db, "quizzes"),
+        where("chapterId", "==", chapterId)
+      );
 
-      if (!snap.exists()) {
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
         console.log("No quiz found");
         return;
       }
 
-      const data = snap.data();
+      const data = snap.docs[0].data();
 
       setQuiz(data);
       setAnswers(new Array(data.questions.length).fill(-1));
@@ -51,47 +56,45 @@ function QuizPage() {
     copy[qi] = oi;
     setAnswers(copy);
   };
-const submitQuiz = async () => {
 
-  let correct = 0;
+  const submitQuiz = async () => {
 
-  // 🔥 CHANGED: ML-style weakness counting
-  let weakCount = {};
+    let correct = 0;
+    let weakCount = {};
 
-  quiz.questions.forEach((q, i) => {
+    quiz.questions.forEach((q, i) => {
 
-    const topic = q.topic || "General";
+      const topic = q.topic || "General";
 
-    if (answers[i] === q.correctIndex) {
-      correct++;
-    } else {
-      weakCount[topic] = (weakCount[topic] || 0) + 1;
-    }
+      if (answers[i] === q.correctIndex) {
+        correct++;
+      } else {
+        weakCount[topic] = (weakCount[topic] || 0) + 1;
+      }
 
-  });
+    });
 
-  const percent = Math.round(
-    (correct / quiz.questions.length) * 100
-  );
+    const percent = Math.round(
+      (correct / quiz.questions.length) * 100
+    );
 
-  setScore(percent);
-  setSubmitted(true);
+    setScore(percent);
+    setSubmitted(true);
 
-  // 🔥 CHANGED: sort weak topics by weakness
-  const sortedWeak = Object.entries(weakCount)
-    .sort((a, b) => b[1] - a[1])
-    .map(item => item[0]);
+    const sortedWeak = Object.entries(weakCount)
+      .sort((a, b) => b[1] - a[1])
+      .map(item => item[0]);
 
-  setWeakTopics(sortedWeak);
+    setWeakTopics(sortedWeak);
 
-  await addDoc(collection(db, "quiz_attempts"), {
-    userId: auth.currentUser.uid,
-    chapterId,
-    score: percent,
-    createdAt: serverTimestamp()
-  });
+    await addDoc(collection(db, "quiz_attempts"), {
+      userId: auth.currentUser.uid,
+      chapterId,
+      score: percent,
+      createdAt: serverTimestamp()
+    });
 
-};
+  };
 
   const extractJSON = (text) => {
     try {
@@ -136,15 +139,6 @@ Generate 5 MCQ questions ONLY from:
 ${topicString}
 
 Return ONLY JSON array.
-
-[
-{
-"question":"...",
-"options":["A","B","C","D"],
-"correctIndex":0,
-"topic":"topic"
-}
-]
 `
                   }
                 ]
@@ -159,11 +153,6 @@ Return ONLY JSON array.
       const rawText =
         data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-      if (!rawText) {
-        alert("Empty AI response");
-        return;
-      }
-
       const parsed = extractJSON(rawText);
 
       if (!parsed) {
@@ -172,10 +161,10 @@ Return ONLY JSON array.
       }
 
       const clean = parsed.map(q => ({
-        question: q.question || "Question",
-        options: q.options || ["A", "B", "C", "D"],
-        correctIndex: q.correctIndex ?? 0,
-        topic: q.topic || weakTopics[0]
+        question: q.question,
+        options: q.options,
+        correctIndex: q.correctIndex,
+        topic: q.topic
       }));
 
       setQuiz({
@@ -198,162 +187,195 @@ Return ONLY JSON array.
     }
   };
 
-  if (!quiz) return <h2>Loading...</h2>;
+  if (!quiz) return (
+    <div className="dashboard-container flex justify-center items-center min-h-[50vh]">
+      <h2 className="title text-3xl animate-pulse">Loading Quiz...</h2>
+    </div>
+  );
 
   return (
-    <div className="dashboard-container">
-      <div className="course-page-header">
-        <button
-          className="back-btn"
-          onClick={() => window.history.back()}
-        >
-          ← Back
-        </button>
-        <h1>Quiz Time!</h1>
-      </div>
+    <div className="dashboard-container max-w-4xl mx-auto pb-16">
 
-      <div className="brutal-card fade-in" style={{ maxWidth: 800, margin: "0 auto", gap: "1.5rem" }}>
-        
-        {quiz.questions.map((q, i) => (
-          <div key={i} style={{ marginBottom: "2.5rem" }}>
-            <h3 style={{ fontSize: "1.3rem", fontWeight: "800", marginBottom: "1.2rem", color: "var(--text-primary)", borderLeft: "6px solid var(--primary-btn)", paddingLeft: "15px", lineHeight: "1.4" }}>
-              {i + 1}. {q.question}
-            </h3>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-              {q.options.map((opt, j) => {
-                const isSelected = answers[i] === j;
-                const isCorrect = submitted && q.correctIndex === j;
-                const isWrong = submitted && isSelected && !isCorrect;
-
-                let bg = "var(--card-bg-alt)";
-                let border = "3px solid var(--border-color)";
-
-                if (isSelected && !submitted) {
-                  bg = "var(--accent-lime)";
-                  border = "3px solid #000";
-                } else if (submitted) {
-                  if (isCorrect) {
-                     bg = "var(--accent-green)";
-                     border = "3px solid #000";
-                  }
-                  if (isWrong) {
-                     bg = "#ff3c00";
-                     border = "3px solid #000";
-                  }
-                }
-
-                return (
-                  <label key={j} style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    padding: "1rem",
-                    border,
-                    borderRadius: "8px",
-                    background: bg,
-                    color: isWrong ? "#fff" : "var(--text-primary)",
-                    fontWeight: isSelected || isCorrect ? "800" : "600",
-                    cursor: submitted ? "default" : "pointer",
-                    boxShadow: isSelected && !submitted ? "4px 4px 0px #000" : (isCorrect ? "4px 4px 0px #000" : "none"),
-                    transition: "all 0.2s ease"
-                  }}>
-                    <input
-                      type="radio"
-                      disabled={submitted}
-                      checked={isSelected}
-                      onChange={() => selectOption(i, j)}
-                      style={{ width: "1.2rem", height: "1.2rem", accentColor: "var(--primary-btn)" }}
-                    />
-                    <span>
-                      {opt}
-                      {submitted && isCorrect && " ✅"}
-                      {submitted && isWrong && " ❌"}
-                    </span>
-                  </label>
-                )
-              })}
-            </div>
-            
-            {submitted && answers[i] !== q.correctIndex && (
-              <div className="fade-in" style={{ marginTop: "1rem", padding: "1rem", background: "var(--accent-pink)", border: "3px solid var(--border-color)", fontWeight: "800", color: "#000", boxShadow: "3px 3px 0 var(--border-color)" }}>
-                Correct Answer: {q.options[q.correctIndex]}
-              </div>
-            )}
-          </div>
-        ))}
-
-        <hr style={{ borderTop: "4px dashed var(--border-color)", margin: "2rem 0" }} />
-
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1.5rem" }}>
-          <button 
-            className={`btn ${submitted ? 'btn-accent-green' : 'btn-primary'}`} 
-            onClick={submitQuiz} 
-            disabled={submitted}
-            style={{ fontSize: "1.2rem", padding: "1rem 2rem", boxShadow: "4px 4px 0 var(--border-color)" }}
-          >
-            {submitted ? "✅ Quiz Evaluated" : "🚀 Submit Quiz"}
-          </button>
-
-          {score !== null && (
-            <h2 className="fade-in" style={{
-              margin: 0,
-              padding: "0.8rem 1.5rem",
-              background: score >= (quiz.passMark || 60) ? "var(--accent-green)" : "var(--accent-pink)",
-              border: "4px solid var(--border-color)",
-              boxShadow: "5px 5px 0px var(--border-color)",
-              color: "#000",
-              fontWeight: "900"
-            }}>
-              Final Score: {score}%
-            </h2>
-          )}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+        <div>
+          <h1 className="title text-5xl m-0 mb-2">Quiz Time</h1>
+          <div className="subtitle m-0 inline-block text-sm">Test your knowledge</div>
         </div>
+        {score !== null && (
+          <div className="brutal-card py-3 px-6 transform rotate-3 bg-[var(--accent-yellow)]" style={{ borderColor: 'var(--border-color)', borderWidth: '4px' }}>
+            <h2 className="text-3xl font-black m-0 text-black">Score: {score}%</h2>
+          </div>
+        )}
       </div>
+
+      <div className="flex flex-col gap-10 mb-12 mt-4">
+        {quiz.questions.map((q, i) => {
+          const badgeColors = [
+            'var(--accent-blue)',
+            'var(--accent-pink)',
+            'var(--accent-orange)',
+            'var(--accent-purple)',
+            'var(--accent-green)'
+          ];
+          const badgeColor = badgeColors[i % badgeColors.length];
+
+          return (
+            <div key={i} className="brutal-card group relative pt-12 pb-10 px-6 md:px-12 mt-8 transition-transform hover:-translate-y-1 shadow-[8px_8px_0px_var(--border-color)]" style={{ background: 'var(--card-bg)', borderColor: 'var(--border-color)', borderWidth: '4px' }}>
+              <span
+                className="absolute -top-6 -left-4 md:-left-6 badge text-2xl font-black text-black px-6 py-4 z-10 shadow-[4px_4px_0px_var(--border-color)] group-hover:rotate-6 transition-transform duration-300"
+                style={{ background: badgeColor, border: '4px solid var(--border-color)' }}
+              >
+                Q{i + 1}
+              </span>
+
+              <h3 className="text-2xl md:text-3xl font-bold mb-6 mt-2 leading-relaxed text-[var(--text-primary)]">
+                {q.question}
+              </h3>
+
+              <div className="flex flex-col gap-4 mt-8">
+                {q.options.map((opt, j) => {
+                  const isSelected = answers[i] === j;
+                  const isCorrect = submitted && q.correctIndex === j;
+                  const isWrong = submitted && isSelected && q.correctIndex !== j;
+
+                  let optionClass = "flex items-center gap-5 p-5 md:p-6 transition-all duration-200 border-4 rounded-xl ";
+                  let inlineStyle = {
+                    background: 'var(--input-bg)',
+                    color: 'var(--text-primary)',
+                    borderColor: 'var(--border-color)',
+                  };
+
+                  if (isCorrect) {
+                    inlineStyle.background = 'var(--accent-green)';
+                    inlineStyle.color = '#000000';
+                    inlineStyle.boxShadow = '4px 4px 0px var(--border-color)';
+                    optionClass += " font-bold ";
+                  } else if (isWrong) {
+                    inlineStyle.background = 'var(--accent-pink)';
+                    inlineStyle.color = '#000000';
+                    inlineStyle.boxShadow = '4px 4px 0px var(--border-color)';
+                    optionClass += " font-bold ";
+                  } else if (isSelected) {
+                    inlineStyle.background = 'var(--accent-yellow)';
+                    inlineStyle.color = '#000000';
+                    inlineStyle.boxShadow = '6px 6px 0px var(--border-color)';
+                    optionClass += " font-bold -translate-y-1 ";
+                  }
+
+                  if (!submitted) {
+                    optionClass += " cursor-pointer hover:-translate-y-1 hover:shadow-[6px_6px_0_0_var(--border-color)] ";
+                  } else {
+                    optionClass += " cursor-not-allowed opacity-90 ";
+                  }
+
+                  return (
+                    <label key={j} className={optionClass} style={inlineStyle}>
+                      <div className="relative flex items-center justify-center w-8 h-8 shrink-0 mt-0.5 self-start">
+                        <input
+                          type="radio"
+                          className="peer opacity-0 absolute w-full h-full cursor-pointer"
+                          disabled={submitted}
+                          checked={isSelected}
+                          onChange={() => selectOption(i, j)}
+                        />
+                        <div className="w-full h-full border-[3px] border-black rounded-lg flex items-center justify-center bg-white transition-all peer-checked:bg-black peer-checked:shadow-[3px_3px_0px_rgba(0,0,0,0.5)]">
+                          {isSelected && <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
+                        </div>
+                      </div>
+                      <span className="text-xl flex-1 leading-snug">
+                        {opt}
+                      </span>
+                      {submitted && (isCorrect || isWrong) && (
+                        <div className="ml-auto text-3xl shrink-0 drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                          {isCorrect ? '✅' : '❌'}
+                        </div>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {!submitted && (
+        <div className="flex justify-center mt-8 mb-16">
+          <button
+            className="btn btn-primary text-xl px-12 py-5 transform hover:-translate-y-2 hover:shadow-[8px_8px_0_0_var(--border-color)] transition-all"
+            onClick={submitQuiz}
+            disabled={submitted || answers.includes(-1)}
+            style={answers.includes(-1) ? { opacity: 0.6, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}}
+          >
+            {answers.includes(-1) ? 'Answer All Questions' : '🚀 Submit Answers'}
+          </button>
+        </div>
+      )}
 
       {submitted && weakTopics.length > 0 && (
-        <div className="brutal-card fade-in delay-2" style={{ maxWidth: 800, margin: "3rem auto", border: "5px solid #ff3c00", boxShadow: "10px 10px 0px #ff3c00", background: "var(--card-bg)" }}>
-          
-          <h2 style={{ fontSize: "2rem", borderBottom: "4px solid var(--border-color)", paddingBottom: "1rem", marginBottom: "2rem", display: "flex", alignItems: "center", gap: "12px", color: "var(--text-primary)" }}>
-            <span>🎯</span> Recommended Focus Areas
-          </h2>
+        <div className="brutal-card p-8 md:p-10 mt-16 mb-16 relative" style={{ background: 'var(--accent-pink)', borderColor: 'var(--border-color)', borderWidth: '4px' }}>
+          <div className="absolute -top-8 -right-4 text-6xl md:text-8xl transform rotate-12 drop-shadow-[5px_5px_0px_rgba(0,0,0,1)]">
+            💡
+          </div>
+          <h3 className="section-title text-2xl mb-8 bg-white border-4 border-black inline-flex text-black transform -rotate-2">
+            ⚠ Areas to Review
+          </h3>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-4">
             {weakTopics.map((t, i) => (
-              <div key={i} style={{ padding: "1.5rem", background: "var(--card-bg-alt)", border: "4px solid var(--border-color)", boxShadow: "5px 5px 0 var(--border-color)" }}>
-                
-                <h3 style={{ margin: "0 0 1.2rem 0", fontSize: "1.5rem", color: "#ff3c00", fontWeight: "900" }}>
-                  ⚠ {t}
-                </h3>
-                
-                <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-                  <a href={`https://www.google.com/search?q=${encodeURIComponent(t + " notes pdf")}`} target="_blank" rel="noreferrer" className="btn btn-accent-blue" style={{ textDecoration: "none", boxShadow: "3px 3px 0 var(--border-color)" }}>
-                    📄 Extra Notes
-                  </a>
-                  <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(t + " tutorial")}`} target="_blank" rel="noreferrer" className="btn btn-accent-yellow" style={{ textDecoration: "none", boxShadow: "3px 3px 0 var(--border-color)" }}>
-                    🎬 Watch Demo
-                  </a>
-                </div>
+              <div key={i} className="brutal-card border-4 p-6 flex flex-col gap-5" style={{ background: 'var(--card-bg-alt)' }}>
+                <h4 className="text-2xl font-bold flex items-center gap-3 m-0 border-b-4 border-dashed border-[var(--border-color)] pb-4 text-[var(--text-primary)]">
+                  <span className="text-3xl">🎯</span> {t}
+                </h4>
 
-                <div style={{ background: "var(--bg-color)", padding: "1.5rem", border: "3px dashed var(--border-color)" }}>
-                  <h4 style={{ marginTop: 0, fontWeight: "800", color: "var(--text-primary)" }}>Verify understanding:</h4>
-                  <PracticeUpload topic={t} />
+                <div className="flex flex-col gap-4">
+                  <a
+                    href={`https://www.google.com/search?q=${encodeURIComponent(t + " pdf")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-accent-blue text-lg hover:-translate-y-1 no-underline flex justify-center py-3"
+                  >
+                    📄 Read Notes
+                  </a>
+                  <a
+                    href={`https://www.youtube.com/results?search_query=${encodeURIComponent(t)}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-danger text-lg hover:-translate-y-1 no-underline flex justify-center py-3"
+                  >
+                    🎬 Watch Video
+                  </a>
+                  <div className="mt-4 pt-4 border-t-4 border-[var(--border-color)] border-dashed">
+                    <PracticeUpload topic={t} />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <div style={{ marginTop: "3rem", display: "flex", justifyContent: "center" }}>
-            <button 
-              className="btn btn-accent-purple" 
+          <div className="mt-12 flex justify-center">
+            <button
+              className="btn btn-accent text-xl px-10 py-5 transform hover:-translate-y-2 hover:shadow-[8px_8px_0_0_var(--border-color)] transition-all flex items-center gap-4 border-4"
               onClick={retryQuiz}
               disabled={loadingRetry}
-              style={{ fontSize: "1.3rem", padding: "1rem 2.5rem", width: "100%", textAlign: "center", justifyContent: "center", boxShadow: "6px 6px 0 var(--border-color)" }}
             >
-              {loadingRetry ? "🤖 Analyzing Context & Generating Test..." : "⚡ Generate Remedial Target Quiz"}
+              {loadingRetry ? (
+                <span className="animate-pulse">⏳ Generating New Quiz...</span>
+              ) : (
+                <>
+                  <span className="text-3xl">🔄</span> Generate Practice Quiz
+                </>
+              )}
             </button>
           </div>
+        </div>
+      )}
 
+      {submitted && weakTopics.length === 0 && (
+        <div className="brutal-card p-10 mt-16 text-center transform -rotate-1" style={{ background: 'var(--accent-green)', color: '#000', borderColor: 'var(--border-color)', borderWidth: '4px' }}>
+          <div className="text-8xl mb-6 animate-bounce drop-shadow-[5px_5px_0px_rgba(0,0,0,1)]">🏆</div>
+          <h2 className="title text-5xl mb-4 m-0">Perfect Score!</h2>
+          <p className="text-2xl font-bold m-0 border-4 border-black bg-white inline-block px-6 py-2">You've mastered all topics in this chapter.</p>
         </div>
       )}
 
