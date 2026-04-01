@@ -12,6 +12,8 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import MaterialUploader from "../components/MaterialUploader";
+import AssignmentUpload from "../components/AssignmentUpload";
+import AssignmentReview from "../components/AssignmentReview";
 import ThemeToggle from "../components/ThemeToggle";
 
 function CoursePage() {
@@ -24,7 +26,7 @@ function CoursePage() {
   const [materials, setMaterials] = useState({});
   const [completedChapters, setCompletedChapters] = useState([]);
   const [newTitle, setNewTitle] = useState("");
-
+  const [assignmentText, setAssignmentText] = useState("");
   const timerRef = useRef(null);
 
   const isInstructor =
@@ -134,14 +136,16 @@ function CoursePage() {
     if (!newTitle)
       return alert("Enter title");
 
-    await addDoc(
+   await addDoc(
       collection(db, "chapters"),
       {
         courseId,
         title: newTitle,
-        order: chapters.length + 1
+        order: chapters.length + 1,
+        assignment: assignmentText || "No assignment"
       }
     );
+    setAssignmentText("");
 
     setNewTitle("");
     loadChapters();
@@ -216,6 +220,11 @@ function CoursePage() {
             value={newTitle}
             onChange={e => setNewTitle(e.target.value)}
           />
+          <input
+  placeholder="Enter assignment question..."
+  value={assignmentText}
+  onChange={e => setAssignmentText(e.target.value)}
+/>
           <button className="btn btn-primary" onClick={addChapter}>
             + Add Day
           </button>
@@ -350,12 +359,17 @@ function CoursePage() {
                   </div>
 
                   {isInstructor && (
-                    <MaterialUploader
-                      chapterId={chapter.id}
-                      onUpload={loadMaterials}
-                    />
-                  )}
+  <MaterialUploader
+    chapterId={chapter.id}
+    onUpload={loadMaterials}
+  />
+)}
 
+{/* 🔥 ASSIGNMENT SECTION ADDED */}
+<div style={{ marginTop: "20px" }}>
+  <h4 style={{ marginBottom: "10px" }}>📄 Assignment</h4>
+  <AssignmentUpload chapterId={chapter.id} />
+</div>
                 </div>
               )}
 
