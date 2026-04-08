@@ -49,7 +49,7 @@ function AdminDashboard() {
                     </h2>
                     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "1rem", borderBottom: "3px solid var(--border-color)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "1rem", borderBottom: "1px solid var(--border-color)" }}>
                             <div>
                                 <p style={{ fontWeight: 700, color: "var(--text-primary)", margin: 0, fontSize: "1.1rem" }}>Database Connection</p>
                                 <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", margin: 0, fontWeight: 500 }}>Firebase Firestore</p>
@@ -57,7 +57,7 @@ function AdminDashboard() {
                             <span className="badge">Healthy</span>
                         </div>
 
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "1rem", borderBottom: "3px solid var(--border-color)" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "1rem", borderBottom: "1px solid var(--border-color)" }}>
                             <div>
                                 <p style={{ fontWeight: 700, color: "var(--text-primary)", margin: 0, fontSize: "1.1rem" }}>Authentication</p>
                                 <p style={{ fontSize: "0.9rem", color: "var(--text-secondary)", margin: 0, fontWeight: 500 }}>Firebase Auth (Google)</p>

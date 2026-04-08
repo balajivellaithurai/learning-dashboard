@@ -149,172 +149,144 @@ function InstructorDashboard() {
 
     };
 
-
     return (
-        <div style={{
-            maxWidth: "1400px",
-            margin: "0 auto",
-            padding: "3rem 2rem",
-            fontFamily: "'Space Grotesk', sans-serif"
-        }}>
+        <div className="dashboard-container max-w-[1400px]">
 
             {/* Header */}
-            <header className="fade-in" style={{
-                background: "var(--card-bg)",
-                border: "6px solid var(--border-color)",
-                boxShadow: "10px 10px 0px var(--border-color)",
-                padding: "2rem 3rem",
-                marginBottom: "5rem",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                position: "relative",
-                transition: "background 0.4s ease, border-color 0.4s ease"
-            }}>
-
-                <div style={{ position: "relative" }}>
-                    <h1 style={{ display: "flex", alignItems: "center", margin: 0, gap: "10px", fontSize: "3.2rem", color: "var(--text-primary)" }}>
-                        <span style={{ fontFamily: "Impact, 'Arial Black', sans-serif", letterSpacing: "1px" }}>INSTRUCTOR</span>
-                        <span style={{
-                            background: "#f772ff",
-                            color: "#fff",
-                            padding: "0px 16px",
-                            border: "5px solid var(--border-color)",
-                            boxShadow: "5px 5px 0px var(--border-color)",
-                            transform: "rotate(-2deg)",
-                            fontFamily: "Impact, 'Arial Black', sans-serif",
-                            fontSize: "3.2rem"
-                        }}>STUDIO</span>
+            <header className="nav-header fade-in">
+                <div>
+                    <h1 className="title text-5xl m-0" style={{ 
+                        background: "linear-gradient(to right, #4f46e5, #ec4899)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "transparent",
+                        backgroundClip: "text",
+                        color: "transparent"
+                    }}>
+                        INSTRUCTOR STUDIO
                     </h1>
 
-                    <div style={{
-                        position: "absolute",
-                        bottom: "-65px",
-                        left: "10px",
-                        background: "var(--card-bg)",
-                        padding: "10px 20px",
-                        border: "4px solid var(--border-color)",
-                        boxShadow: "4px 4px 0 var(--border-color)",
-                        fontWeight: "800",
-                        fontSize: "1.1rem",
-                        color: "var(--text-primary)"
-                    }}>
+                    <div className="subtitle" style={{marginTop: "1.2rem", marginBottom: 0}}>
                         Manage your curriculum and content.
                     </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", gap: "2rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
                     <ThemeToggle />
                     <button
-                        className="btn-neo"
+                        className="btn btn-logout"
                         onClick={handleLogout}
-                        style={{
-                            background: "#ff3c00",
-                            color: "#fff",
-                            border: "5px solid var(--border-color)",
-                            boxShadow: "5px 5px 0px var(--border-color)",
-                            padding: "12px 28px",
-                            fontWeight: "900",
-                            fontSize: "1.1rem",
-                            cursor: "pointer"
-                        }}
                     >
                         LOGOUT
                     </button>
                 </div>
-
             </header>
 
-
-            {/* COURSES LIST */}
-
-            <div style={{ marginTop: "5rem" }}>
-                <h2 className="fade-in delay-2" style={{
-                    fontSize: "2rem",
-                    fontWeight: "900",
-                    color: "var(--text-primary)",
-                    marginBottom: "2rem"
-                }}>
-                    📚 Your Courses
-                </h2>
-
-                <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(400px, 1fr))",
-                    gap: "2rem"
-                }}>
-
-                    {courses.map(course => (
-
-                        <div
-                            key={course.id}
-                            style={{
-                                background: "var(--card-bg)",
-                                border: "5px solid var(--border-color)",
-                                padding: "2rem",
-                                boxShadow: "8px 8px 0px var(--border-color)",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: "1rem"
-                            }}
-                        >
-
-                            <h3 style={{
-                                fontSize: "1.5rem",
-                                fontWeight: "900",
-                                color: "var(--text-primary)",
-                                margin: 0
-                            }}>
-                                {course.title}
-                            </h3>
-
-                            <p style={{
-                                fontWeight: "600",
-                                color: "var(--text-primary)",
-                                flex: 1,
-                                margin: 0
-                            }}>
-                                {course.description}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+                {/* CREATE COURSE FORM */}
+                <div className="lg:col-span-1">
+                    <form onSubmit={createCourse} className="brutal-card fade-in delay-1 h-full flex flex-col justify-center gap-6">
+                        <div>
+                            <h2 className="section-title m-0">
+                                🚀 Create Course
+                            </h2>
+                            <p className="text-sm font-medium mt-2" style={{color: "var(--text-secondary)"}}>
+                                Launch a new learning journey.
                             </p>
-
-                            <button
-                                style={{
-                                    width: "100%",
-                                    background: "transparent",
-                                    border: "4px solid var(--border-color)",
-                                    boxShadow: "4px 4px 0px var(--border-color)",
-                                    padding: "12px",
-                                    fontWeight: "900",
-                                    color: "var(--text-primary)"
-                                }}
-                                onClick={() => navigate(`/course/${course.id}`)}
-                            >
-                                Manage Course →
-                            </button>
-
-                            <button
-                                style={{
-                                    width: "100%",
-                                    background: "#ff3c00",
-                                    border: "4px solid var(--border-color)",
-                                    boxShadow: "4px 4px 0px var(--border-color)",
-                                    padding: "12px",
-                                    fontWeight: "900",
-                                    color: "#fff"
-                                }}
-                                onClick={() => deleteCourse(course.id)}
-                            >
-                                Delete Course
-                            </button>
-
+                        </div>
+                        
+                        <div className="flex flex-col gap-4">
+                            <div>
+                                <input
+                                    className="form-input"
+                                    type="text"
+                                    placeholder="Course Title"
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <textarea
+                                    className="form-input form-textarea"
+                                    placeholder="Course Description"
+                                    value={description}
+                                    onChange={e => setDescription(e.target.value)}
+                                    required
+                                    rows="4"
+                                />
+                            </div>
                         </div>
 
-                    ))}
-
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={loading}
+                        >
+                            {loading ? "CREATING..." : "CREATE COURSE"}
+                        </button>
+                    </form>
                 </div>
 
-            </div>
+                {/* COURSES LIST */}
+                <div className="lg:col-span-2 flex flex-col gap-6">
+                    <h2 className="section-title fade-in delay-2 m-0 bg-transparent border-none shadow-none">
+                        <div style={{ position: "relative", width: "24px", height: "24px" }}>
+                            <div style={{ position: "absolute", top: 0, left: 0, width: "16px", height: "16px", background: "#34d399", borderRadius: "4px", opacity: 0.9 }}></div>
+                            <div style={{ position: "absolute", top: "4px", left: "4px", width: "16px", height: "16px", background: "#f472b6", borderRadius: "4px", opacity: 0.9 }}></div>
+                            <div style={{ position: "absolute", top: "8px", left: "8px", width: "16px", height: "16px", background: "#60a5fa", borderRadius: "4px", opacity: 0.9 }}></div>
+                        </div>
+                        Your Courses
+                    </h2>
 
+                    {courses.length === 0 ? (
+                        <div className="brutal-card empty-state text-center py-16">
+                            <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>🛠</div>
+                            <p className="text-xl" style={{ fontWeight: "600", color: "var(--text-secondary)" }}>
+                                You have not created any courses yet.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {courses.map(course => (
+                                <div
+                                    key={course.id}
+                                    className="brutal-card cursor-pointer"
+                                >
+                                    <div className="flex-1">
+                                        <h3 className="title text-2xl" style={{ fontSize: "1.4rem", marginBottom: "0.5rem" }}>
+                                            {course.title}
+                                        </h3>
+                                        <p style={{
+                                            fontWeight: "500",
+                                            color: "var(--text-secondary)",
+                                            margin: 0,
+                                            fontSize: "0.95rem",
+                                            lineHeight: "1.5"
+                                        }}>
+                                            {course.description}
+                                        </p>
+                                    </div>
+
+                                    <div style={{ marginTop: "2rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                                        <button
+                                            className="btn btn-secondary w-full"
+                                            onClick={() => navigate(`/course/${course.id}`)}
+                                        >
+                                            Manage Course →
+                                        </button>
+                                        <button
+                                            className="btn btn-logout w-full"
+                                            onClick={() => deleteCourse(course.id)}
+                                        >
+                                            Delete Course
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

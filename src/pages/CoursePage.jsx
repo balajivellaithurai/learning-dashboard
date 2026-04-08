@@ -194,20 +194,29 @@ function CoursePage() {
       {/* 🔥 ADDED: Progress UI */}
       <div style={{
         marginBottom: "20px",
-        padding: "15px",
-        border: "3px solid var(--border-color)",
-        background: "var(--card-bg)"
+        padding: "20px",
+        border: "1px solid var(--border-color)",
+        borderRadius: "16px",
+        boxShadow: "var(--shadow-sm)",
+        background: "var(--card-bg)",
+        backdropFilter: "blur(12px)"
       }}>
-        <h3>📊 Progress: {progressPercent}%</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontWeight: "600", color: "var(--text-secondary)" }}>
+            <span>Overall Progress</span>
+            <span style={{ color: "var(--text-primary)", fontWeight: "800" }}>{progressPercent}%</span>
+        </div>
         <div style={{
           height: "10px",
-          background: "#ccc",
-          marginTop: "10px"
+          background: "var(--input-bg)",
+          borderRadius: "9999px",
+          overflow: "hidden"
         }}>
           <div style={{
             width: `${progressPercent}%`,
             height: "100%",
-            background: "#4caf50"
+            background: "linear-gradient(to right, #4f46e5, #ec4899)",
+            borderRadius: "9999px",
+            transition: "width 0.5s ease-out"
           }} />
         </div>
       </div>

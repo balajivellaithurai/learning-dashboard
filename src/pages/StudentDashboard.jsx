@@ -71,63 +71,109 @@ function StudentDashboard() {
   }, []);
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container max-w-[1400px]">
 
-      <header className="nav-header fade-in">
-        <div>
-          <h1 className="title">Student <span className="text-gradient">Dashboard</span></h1>
-          <div className="subtitle" style={{ marginBottom: 0 }}>Choose a course to continue learning</div>
-        </div>
-        <div className="nav-actions">
-          <ThemeToggle />
-          <button className="btn btn-logout" onClick={async () => { await auth.signOut(); navigate("/"); }}>Logout</button>
-        </div>
+      {/* Header */}
+      <header className="nav-header fade-in border-none">
+          <div>
+              <h1 className="title text-5xl m-0" style={{ 
+                  background: "linear-gradient(to right, #4f46e5, #ec4899)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                  color: "transparent"
+              }}>
+                  STUDENT DASHBOARD
+              </h1>
+
+              <div className="subtitle" style={{marginTop: "1.2rem", marginBottom: 0}}>
+                  Choose a course to continue learning
+              </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+              <ThemeToggle />
+              <button
+                  className="btn btn-logout"
+                  onClick={async () => { await auth.signOut(); navigate("/"); }}
+              >
+                  LOGOUT
+              </button>
+          </div>
       </header>
 
       {courses.length === 0 ? (
-        <div className="empty-state fade-in delay-1">
-          <div className="empty-state-icon">📚</div>
-          <p>No courses available right now. Please check back later.</p>
+        <div className="brutal-card empty-state fade-in delay-1 text-center py-16">
+          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>📚</div>
+          <p className="text-xl" style={{ fontWeight: "600", color: "var(--text-secondary)" }}>
+              No courses available right now. Please check back later.
+          </p>
         </div>
       ) : (
-        <div className="grid-layout fade-in delay-1">
-          {courses.map(course => (
-            <div
-              key={course.id}
-              className="brutal-card"
-              style={{ cursor: "pointer", display: "flex", flexDirection: "column" }}
-              onClick={() => navigate(`/course/${course.id}`)}
-            >
-              <div style={{ flex: 1 }}>
-                <h2 style={{ fontSize: "1.5rem", fontWeight: "700", marginBottom: "0.5rem" }}>{course.title}</h2>
-                <p style={{ fontWeight: "500", marginBottom: "1rem" }}>{course.description}</p>
-                
-                {progressData[course.id] !== undefined && (
-                  <div style={{ marginBottom: "1rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontWeight: "bold", fontSize: "0.9rem" }}>
-                      <span>Progress</span>
-                      <span>{progressData[course.id]}%</span>
-                    </div>
-                    <div style={{
-                      height: "10px",
-                      background: "#ccc",
-                      border: "2px solid var(--border-color)",
-                      boxShadow: "2px 2px 0px var(--border-color)"
-                    }}>
-                      <div style={{
-                        width: `${progressData[course.id]}%`,
-                        height: "100%",
-                        background: "#4caf50",
-                        borderRight: progressData[course.id] > 0 && progressData[course.id] < 100 ? "2px solid var(--border-color)" : "none"
-                      }} />
-                    </div>
-                  </div>
-                )}
+        <div className="fade-in delay-1">
+            <h2 className="section-title">
+                <div style={{ position: "relative", width: "24px", height: "24px" }}>
+                    <div style={{ position: "absolute", top: 0, left: 0, width: "16px", height: "16px", background: "#34d399", borderRadius: "4px", opacity: 0.9 }}></div>
+                    <div style={{ position: "absolute", top: "4px", left: "4px", width: "16px", height: "16px", background: "#f472b6", borderRadius: "4px", opacity: 0.9 }}></div>
+                    <div style={{ position: "absolute", top: "8px", left: "8px", width: "16px", height: "16px", background: "#60a5fa", borderRadius: "4px", opacity: 0.9 }}></div>
+                </div>
+                Available Courses
+            </h2>
 
-              </div>
-              <button className="btn btn-secondary" style={{ width: "100%", padding: "0.5rem", pointerEvents: "none", marginTop: "auto" }}>View Course →</button>
+            <div className="grid-layout">
+              {courses.map(course => (
+                <div
+                  key={course.id}
+                  className="brutal-card cursor-pointer"
+                  onClick={() => navigate(`/course/${course.id}`)}
+                >
+                  <div className="flex-1">
+                    <h3 className="title" style={{ fontSize: "1.6rem", marginBottom: "0.5rem" }}>
+                        {course.title}
+                    </h3>
+
+                    <p style={{
+                        fontWeight: "500",
+                        color: "var(--text-secondary)",
+                        margin: 0,
+                        fontSize: "0.95rem",
+                        lineHeight: "1.5"
+                    }}>
+                        {course.description}
+                    </p>
+                  </div>
+                  
+                  {progressData[course.id] !== undefined && (
+                    <div style={{ marginTop: "1.5rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontWeight: "600", fontSize: "0.85rem", color: "var(--text-secondary)" }}>
+                        <span>Course Progress</span>
+                        <span style={{ color: "var(--text-primary)", fontWeight: "700" }}>{progressData[course.id]}%</span>
+                      </div>
+                      <div style={{
+                        height: "8px",
+                        background: "var(--input-bg)",
+                        borderRadius: "9999px",
+                        overflow: "hidden"
+                      }}>
+                        <div style={{
+                          width: `${progressData[course.id]}%`,
+                          height: "100%",
+                          background: "linear-gradient(to right, #4f46e5, #ec4899)",
+                          borderRadius: "9999px",
+                          transition: "width 0.5s ease-out"
+                        }} />
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: "2rem" }}>
+                      <button className="btn btn-secondary" style={{ width: "100%", pointerEvents: "none" }}>
+                          View Course →
+                      </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
         </div>
       )}
 

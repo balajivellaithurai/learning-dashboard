@@ -28,7 +28,6 @@ function QuizPage() {
 
     const loadQuiz = async () => {
 
-      // 🔥 FIX: use query instead of doc
       const q = query(
         collection(db, "quizzes"),
         where("chapterId", "==", chapterId)
@@ -198,12 +197,24 @@ Return ONLY JSON array.
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div>
-          <h1 className="title text-5xl m-0 mb-2">Quiz Time</h1>
+          <h1 className="title text-5xl m-0 mb-2" style={{
+            background: "linear-gradient(to right, #4f46e5, #ec4899)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            color: "transparent"
+          }}>Quiz Time</h1>
           <div className="subtitle m-0 inline-block text-sm">Test your knowledge</div>
         </div>
         {score !== null && (
-          <div className="brutal-card py-3 px-6 transform rotate-3 bg-[var(--accent-yellow)]" style={{ borderColor: 'var(--border-color)', borderWidth: '4px' }}>
-            <h2 className="text-3xl font-black m-0 text-black">Score: {score}%</h2>
+          <div className="brutal-card py-4 px-8 transform rounded-2xl flex items-center justify-center">
+            <h2 className="text-3xl font-black m-0" style={{
+              background: "linear-gradient(to right, #4f46e5, #ec4899)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              color: "transparent"
+            }}>Score: {score}%</h2>
           </div>
         )}
       </div>
@@ -220,10 +231,10 @@ Return ONLY JSON array.
           const badgeColor = badgeColors[i % badgeColors.length];
 
           return (
-            <div key={i} className="brutal-card group relative pt-12 pb-10 px-6 md:px-12 mt-8 transition-transform hover:-translate-y-1 shadow-[8px_8px_0px_var(--border-color)]" style={{ background: 'var(--card-bg)', borderColor: 'var(--border-color)', borderWidth: '4px' }}>
+            <div key={i} className="brutal-card group relative pt-12 pb-10 px-6 md:px-12 mt-8 transition-transform">
               <span
-                className="absolute -top-6 -left-4 md:-left-6 badge text-2xl font-black text-black px-6 py-4 z-10 shadow-[4px_4px_0px_var(--border-color)] group-hover:rotate-6 transition-transform duration-300"
-                style={{ background: badgeColor, border: '4px solid var(--border-color)' }}
+                className="absolute -top-5 -left-4 md:-left-5 badge flex items-center justify-center text-xl font-bold text-white shadow-sm transition-transform duration-300 w-12 h-12 rounded-2xl"
+                style={{ background: badgeColor, border: 'none' }}
               >
                 Q{i + 1}
               </span>
@@ -238,7 +249,7 @@ Return ONLY JSON array.
                   const isCorrect = submitted && q.correctIndex === j;
                   const isWrong = submitted && isSelected && q.correctIndex !== j;
 
-                  let optionClass = "flex items-center gap-5 p-5 md:p-6 transition-all duration-200 border-4 rounded-xl ";
+                  let optionClass = "flex items-center gap-5 p-5 md:p-6 transition-all duration-200 border rounded-xl ";
                   let inlineStyle = {
                     background: 'var(--input-bg)',
                     color: 'var(--text-primary)',
@@ -246,31 +257,28 @@ Return ONLY JSON array.
                   };
 
                   if (isCorrect) {
-                    inlineStyle.background = 'var(--accent-green)';
-                    inlineStyle.color = '#000000';
-                    inlineStyle.boxShadow = '4px 4px 0px var(--border-color)';
+                    inlineStyle.background = 'rgba(52, 211, 153, 0.1)';
+                    inlineStyle.borderColor = 'rgba(52, 211, 153, 0.5)';
                     optionClass += " font-bold ";
                   } else if (isWrong) {
-                    inlineStyle.background = 'var(--accent-pink)';
-                    inlineStyle.color = '#000000';
-                    inlineStyle.boxShadow = '4px 4px 0px var(--border-color)';
+                    inlineStyle.background = 'rgba(244, 114, 182, 0.1)';
+                    inlineStyle.borderColor = 'rgba(244, 114, 182, 0.5)';
                     optionClass += " font-bold ";
                   } else if (isSelected) {
-                    inlineStyle.background = 'var(--accent-yellow)';
-                    inlineStyle.color = '#000000';
-                    inlineStyle.boxShadow = '6px 6px 0px var(--border-color)';
-                    optionClass += " font-bold -translate-y-1 ";
+                    inlineStyle.background = 'rgba(79, 70, 229, 0.08)';
+                    inlineStyle.borderColor = 'rgba(79, 70, 229, 0.5)';
+                    optionClass += " font-bold ";
                   }
 
                   if (!submitted) {
-                    optionClass += " cursor-pointer hover:-translate-y-1 hover:shadow-[6px_6px_0_0_var(--border-color)] ";
+                    optionClass += " cursor-pointer hover:-translate-y-1 hover:shadow-md ";
                   } else {
                     optionClass += " cursor-not-allowed opacity-90 ";
                   }
 
                   return (
                     <label key={j} className={optionClass} style={inlineStyle}>
-                      <div className="relative flex items-center justify-center w-8 h-8 shrink-0 mt-0.5 self-start">
+                      <div className="relative flex items-center justify-center w-6 h-6 shrink-0 mt-0.5 self-start">
                         <input
                           type="radio"
                           className="peer opacity-0 absolute w-full h-full cursor-pointer"
@@ -278,15 +286,15 @@ Return ONLY JSON array.
                           checked={isSelected}
                           onChange={() => selectOption(i, j)}
                         />
-                        <div className="w-full h-full border-[3px] border-black rounded-lg flex items-center justify-center bg-white transition-all peer-checked:bg-black peer-checked:shadow-[3px_3px_0px_rgba(0,0,0,0.5)]">
-                          {isSelected && <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
+                        <div className="w-full h-full border border-[var(--border-color)] rounded-full flex items-center justify-center bg-[var(--card-bg)] transition-all peer-checked:bg-[var(--primary-btn)] peer-checked:border-transparent">
+                          {isSelected && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>}
                         </div>
                       </div>
                       <span className="text-xl flex-1 leading-snug">
                         {opt}
                       </span>
                       {submitted && (isCorrect || isWrong) && (
-                        <div className="ml-auto text-3xl shrink-0 drop-shadow-[2px_2px_0px_rgba(0,0,0,1)]">
+                        <div className="ml-auto text-2xl shrink-0">
                           {isCorrect ? '✅' : '❌'}
                         </div>
                       )}
@@ -302,7 +310,7 @@ Return ONLY JSON array.
       {!submitted && (
         <div className="flex justify-center mt-8 mb-16">
           <button
-            className="btn btn-primary text-xl px-12 py-5 transform hover:-translate-y-2 hover:shadow-[8px_8px_0_0_var(--border-color)] transition-all"
+            className="btn btn-primary text-xl px-12 py-5 transform transition-all shadow-md rounded-xl"
             onClick={submitQuiz}
             disabled={submitted || answers.includes(-1)}
             style={answers.includes(-1) ? { opacity: 0.6, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}}
@@ -313,19 +321,19 @@ Return ONLY JSON array.
       )}
 
       {submitted && weakTopics.length > 0 && (
-        <div className="brutal-card p-8 md:p-10 mt-16 mb-16 relative" style={{ background: 'var(--accent-pink)', borderColor: 'var(--border-color)', borderWidth: '4px' }}>
-          <div className="absolute -top-8 -right-4 text-6xl md:text-8xl transform rotate-12 drop-shadow-[5px_5px_0px_rgba(0,0,0,1)]">
+        <div className="brutal-card p-8 md:p-10 mt-16 mb-16 relative overflow-hidden" style={{ background: 'rgba(244, 114, 182, 0.05)', borderColor: 'rgba(244, 114, 182, 0.2)' }}>
+          <div className="absolute -top-4 -right-2 text-6xl md:text-8xl opacity-30 transform rotate-12">
             💡
           </div>
-          <h3 className="section-title text-2xl mb-8 bg-white border-4 border-black inline-flex text-black transform -rotate-2">
-            ⚠ Areas to Review
+          <h3 className="text-2xl mb-8 font-bold inline-flex items-center gap-3">
+            <span className="text-3xl">⚠</span> Areas to Review
           </h3>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-4">
             {weakTopics.map((t, i) => (
-              <div key={i} className="brutal-card border-4 p-6 flex flex-col gap-5" style={{ background: 'var(--card-bg-alt)' }}>
-                <h4 className="text-2xl font-bold flex items-center gap-3 m-0 border-b-4 border-dashed border-[var(--border-color)] pb-4 text-[var(--text-primary)]">
-                  <span className="text-3xl">🎯</span> {t}
+              <div key={i} className="brutal-card p-6 flex flex-col gap-5" style={{ background: 'var(--card-bg)' }}>
+                <h4 className="text-xl font-bold flex items-center gap-3 m-0 border-b border-dashed border-[var(--border-color)] pb-4 text-[var(--text-primary)]">
+                  <span className="text-2xl">🎯</span> {t}
                 </h4>
 
                 <div className="flex flex-col gap-4">
@@ -333,7 +341,7 @@ Return ONLY JSON array.
                     href={`https://www.google.com/search?q=${encodeURIComponent(t + " pdf")}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn btn-accent-blue text-lg hover:-translate-y-1 no-underline flex justify-center py-3"
+                    className="btn btn-secondary text-lg transition-all no-underline flex justify-center py-3 rounded-xl"
                   >
                     📄 Read Notes
                   </a>
@@ -341,11 +349,11 @@ Return ONLY JSON array.
                     href={`https://www.youtube.com/results?search_query=${encodeURIComponent(t)}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="btn btn-danger text-lg hover:-translate-y-1 no-underline flex justify-center py-3"
+                    className="btn btn-danger text-lg transition-all no-underline flex justify-center py-3 rounded-xl"
                   >
                     🎬 Watch Video
                   </a>
-                  <div className="mt-4 pt-4 border-t-4 border-[var(--border-color)] border-dashed">
+                  <div className="mt-4 pt-4 border-t border-[var(--border-color)] border-dashed">
                     <PracticeUpload topic={t} />
                   </div>
                 </div>
@@ -353,9 +361,9 @@ Return ONLY JSON array.
             ))}
           </div>
 
-          <div className="mt-12 flex justify-center">
+          <div className="mt-12 flex justify-center z-10 relative">
             <button
-              className="btn btn-accent text-xl px-10 py-5 transform hover:-translate-y-2 hover:shadow-[8px_8px_0_0_var(--border-color)] transition-all flex items-center gap-4 border-4"
+              className="btn btn-primary text-xl px-10 py-5 transform hover:-translate-y-1 transition-all flex items-center gap-4 rounded-xl shadow-md"
               onClick={retryQuiz}
               disabled={loadingRetry}
             >
@@ -372,10 +380,14 @@ Return ONLY JSON array.
       )}
 
       {submitted && weakTopics.length === 0 && (
-        <div className="brutal-card p-10 mt-16 text-center transform -rotate-1" style={{ background: 'var(--accent-green)', color: '#000', borderColor: 'var(--border-color)', borderWidth: '4px' }}>
-          <div className="text-8xl mb-6 animate-bounce drop-shadow-[5px_5px_0px_rgba(0,0,0,1)]">🏆</div>
-          <h2 className="title text-5xl mb-4 m-0">Perfect Score!</h2>
-          <p className="text-2xl font-bold m-0 border-4 border-black bg-white inline-block px-6 py-2">You've mastered all topics in this chapter.</p>
+        <div className="brutal-card p-10 mt-16 text-center" style={{ background: 'rgba(52, 211, 153, 0.1)', borderColor: 'rgba(52, 211, 153, 0.3)' }}>
+          <div className="text-8xl mb-6 animate-bounce">🏆</div>
+          <h2 className="title text-5xl mb-4 m-0" style={{
+              background: "linear-gradient(to right, #10b981, #3b82f6)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent"
+          }}>Perfect Score!</h2>
+          <p className="text-xl font-bold m-0 text-[var(--text-secondary)] mt-4">You've mastered all topics in this chapter.</p>
         </div>
       )}
 
